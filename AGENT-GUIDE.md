@@ -28,7 +28,7 @@ Everything new lives in `Extension/Domination/` (change 1) and `Extension/Custom
 | File | What is added |
 |---|---|
 | `CMakeLists.txt` | `DINGOSDK_BUILD_DOMINATION_TESTS`: the two test programs (rules, and whole multiplayer rounds) |
-| `cmake/Runtime.cmake` | Domination's `.cpp` files in `dingosdk_runtime`, and `DINGOSDK_CUSTOM_MODES` on `domination_menu.cpp` when `Extension/CustomModes/custom_modes.h` exists |
+| `cmake/Runtime.cmake` | Domination's `.cpp` files in `dingosdk_runtime` (`domination_tools.cpp` included: the park-making commands), and `DINGOSDK_CUSTOM_MODES` on `domination_menu.cpp` when `Extension/CustomModes/custom_modes.h` exists |
 | `cmake/UI.cmake` | `domination_overlay.cpp` in the overlay library |
 | `Extension/Console/commands.cpp/.h` | `register_domination_commands` |
 | `Runtime/client_tick.cpp` | `domination::on_client_tick()` and `domination::set_level()` |
@@ -53,6 +53,8 @@ No protocol, relay or server change: Domination's messages ride inside the sessi
 | `Extension/Console/commands.cpp/.h` | `register_custom_modes_commands` (`modes list|host|cancel`) |
 | `cmake/Runtime.cmake` | `custom_modes.cpp`, `custom_modes_commands.cpp` |
 | `Extension/Multiplayer/Test/lobby_tests.cpp`, `protocol_tests.cpp` | the mode in lobby data and server tags |
+
+Change 1 also adds, inside `Extension/Domination/` only: `parks/` (the built-in parks as files, and their specs), `tools/` (park-making and packing scripts: Python, not built) and `MAKING-PARKS.md`. `domination_parks.h` is generated from `parks/` by `tools/make_builtin.py`; regenerate it rather than editing it.
 
 Play counts (change 1) use `profile_runtime::local_value` / `set_local_values` (keys `ReSkate.Domination.*`), the store Hall of Meat keeps its bests in. Nothing is sent anywhere.
 

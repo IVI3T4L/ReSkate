@@ -1,6 +1,6 @@
-From 8d0852cbc24e3fdb746e2b6164da8a4b9273c09c Mon Sep 17 00:00:00 2001
+From dc55f4d0e7708b688e77abe8ffd135aa308f5f8c Mon Sep 17 00:00:00 2001
 From: IVI <breakthroughsecurity@gmail.com>
-Date: Fri, 16 Oct 2026 22:32:38 -0400
+Date: Sat, 17 Oct 2026 13:39:08 -0400
 Subject: [PATCH] Domination: a custom multiplayer mode
 
 skate. 3's Domination: own the most spots in a park. The best single trick
@@ -17,12 +17,15 @@ change it safely.
   colour (no two players alike), each nearby spot's edge a faint glow on the
   ground (hidden behind walls: rays from the camera), arrows at the screen's edge
   to the nearest spots you don't own, a timer, spot list, standings, and a feed
-  of every trick and every spot changing hands (the spot flashes; a take or a
-  loss is heard, with the game's own menu sounds); standing on a spot says whose
-  it is and the score to beat.
+  of who did what (a small banner each in that player's colour, wiping in under
+  the timer: YOU TOOK, YOU STOLE ... FROM, ... STOLE ... FROM YOU; the spot
+  flashes; a take or a loss is heard, with the game's own menu sounds); standing
+  on a spot says whose it is and the score to beat.
 - Results: the winner (the most spots; a tie goes to the higher total of
   points), standings (spots, time held, steals, points), the best trick, the
-  most steals, the longest held, and who owns each spot.
+  most steals, the longest held, and who owns each spot; they come in one after
+  another (the winner's band, rows sliding in with points counting up, award
+  cards).
 - Parks: several, on any map. `domination parks` lists them with their map
   and whether that map is installed here (a map mod's Thunderstore package is
   named when it isn't, or when it is switched off); `domination set map
@@ -70,9 +73,22 @@ change it safely.
   challenges (Rolling Waves 12 spots, Bonski Park under the bridge 8, Hartcore
   Plaza 12, FlowTopia 9, El-One Courts 5), and five on the Skate 3 map
   mod: the red-bowl park (20 spots), Hillside park (9), Industrial bowls (7),
-  Sunken banks (6) and Loans plaza (6). Every spot checked in game. Maps can ship their
-  own. tools/ holds the script that made the red-bowl park and the one that
+  Sunken banks (6) and Loans plaza (6). Every spot checked in game. Mods switched on in
+  the launcher add more: a map mod's domination*.json, or a park pack (a mod
+  with a domination folder of park files and no game data). tools/ holds the script that made the red-bowl park and the one that
   builds parks in.
+- Making parks (MAKING-PARKS.md, step by step): `domination scan` (a height
+  map of an area, one ground ray per grid point), `domination tp` (a teleport
+  facing a heading) and `domination survey` (a list of places visited
+  unattended); tools/render_scan.py draws a scan, tools/build_park.py turns a
+  spec of footprints and a scan into a park file (heights, markers, overlap
+  checks). The ten built-in parks' files are in parks/ with their specs in
+  parks/specs/; tools/make_builtin.py builds them in (domination_parks.h is
+  generated, and regenerates byte for byte from parks/).
+- Park packs: tools/make_pack.py packages park files as a mod for
+  Thunderstore (manifest.json, README.md, an icon drawn from the spots, and a
+  domination folder of park files). No game data, so it loads on any build; a
+  pack's park overrides a built-in park of the same id.
 - Code: the rules (domination_model, domination_sync, domination_wire) apart
   from the game side (domination.cpp: rounds; domination_files.cpp: parks and
   spot outlines; domination_hud.cpp: reading the score HUD;
@@ -87,29 +103,54 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
  CMakeLists.txt                                |  16 +
  Extension/Console/commands.cpp                |   1 +
  Extension/Console/commands.h                  |   1 +
- Extension/Domination/ARCHITECTURE.md          | 112 ++
- Extension/Domination/README.md                | 147 +++
- .../Domination/Test/domination_net_tests.cpp  | 799 +++++++++++++++
+ Extension/Domination/ARCHITECTURE.md          | 114 ++
+ Extension/Domination/MAKING-PARKS.md          | 117 +++
+ Extension/Domination/README.md                | 150 +++
+ .../Domination/Test/domination_net_tests.cpp  | 799 ++++++++++++++
  .../Domination/Test/domination_tests.cpp      | 559 ++++++++++
- Extension/Domination/domination.cpp           | 959 ++++++++++++++++++
- Extension/Domination/domination.h             | 161 +++
- Extension/Domination/domination_commands.cpp  |  57 ++
- Extension/Domination/domination_files.cpp     | 349 +++++++
+ Extension/Domination/domination.cpp           | 994 ++++++++++++++++++
+ Extension/Domination/domination.h             | 170 +++
+ Extension/Domination/domination_commands.cpp  |  64 ++
+ Extension/Domination/domination_files.cpp     | 363 +++++++
  Extension/Domination/domination_hud.cpp       |  80 ++
- Extension/Domination/domination_internal.h    | 239 +++++
+ Extension/Domination/domination_internal.h    | 287 +++++
  Extension/Domination/domination_menu.cpp      | 118 +++
  Extension/Domination/domination_menu.h        |  11 +
- Extension/Domination/domination_model.cpp     | 466 +++++++++
+ Extension/Domination/domination_model.cpp     | 466 ++++++++
  Extension/Domination/domination_model.h       | 209 ++++
- Extension/Domination/domination_overlay.cpp   | 586 +++++++++++
+ Extension/Domination/domination_overlay.cpp   | 696 ++++++++++++
  Extension/Domination/domination_overlay.h     |  12 +
  Extension/Domination/domination_parks.h       | 224 ++++
- Extension/Domination/domination_sync.cpp      | 408 ++++++++
+ Extension/Domination/domination_sync.cpp      | 408 +++++++
  Extension/Domination/domination_sync.h        | 202 ++++
+ Extension/Domination/domination_tools.cpp     | 189 ++++
  Extension/Domination/domination_wire.cpp      | 130 +++
  Extension/Domination/domination_wire.h        |  62 ++
+ Extension/Domination/parks/s3i-banks.json     |  24 +
+ Extension/Domination/parks/s3i-hillpark.json  |  28 +
+ .../Domination/parks/s3i-industrial.json      |  25 +
+ Extension/Domination/parks/s3i-loans.json     |  24 +
+ Extension/Domination/parks/sanvan-bridge.json |  25 +
+ Extension/Domination/parks/sanvan-elone.json  |  23 +
+ .../Domination/parks/sanvan-flowtopia.json    |  29 +
+ Extension/Domination/parks/sanvan-mcorp.json  |  32 +
+ .../Domination/parks/sanvan-seaside.json      |  33 +
+ .../parks/skate3improved-redbowl.json         |  42 +
+ .../parks/specs/s3i-banks.spec.json           |  24 +
+ .../parks/specs/s3i-hillpark.spec.json        |  28 +
+ .../parks/specs/s3i-industrial.spec.json      |  25 +
+ .../parks/specs/s3i-loans.spec.json           |  24 +
+ .../parks/specs/sanvan-bridge.spec.json       |  26 +
+ .../parks/specs/sanvan-elone.spec.json        |  23 +
+ .../parks/specs/sanvan-flowtopia.spec.json    |  30 +
+ .../parks/specs/sanvan-mcorp.spec.json        |  32 +
+ .../parks/specs/sanvan-seaside.spec.json      |  34 +
+ Extension/Domination/tools/build_park.py      | 137 +++
+ Extension/Domination/tools/find_features.py   |  89 ++
  Extension/Domination/tools/make_builtin.py    |  55 +
- Extension/Domination/tools/make_park.py       | 175 ++++
+ Extension/Domination/tools/make_pack.py       | 143 +++
+ Extension/Domination/tools/make_park.py       | 175 +++
+ Extension/Domination/tools/render_scan.py     | 100 ++
  Extension/Multiplayer/Session/session.cpp     |  10 +-
  Extension/Multiplayer/Test/mesh_tests.cpp     |   8 +
  .../Objects/local_placements_runtime.cpp      |   7 +-
@@ -119,10 +160,11 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
  Extension/UI/Overlay/overlay_render.cpp       |   5 +-
  Runtime/client_tick.cpp                       |   3 +
  Runtime/runtime_init.cpp                      |   4 +
- cmake/Runtime.cmake                           |  13 +
+ cmake/Runtime.cmake                           |  14 +
  cmake/UI.cmake                                |   1 +
- 37 files changed, 6204 insertions(+), 3 deletions(-)
+ 62 files changed, 7739 insertions(+), 3 deletions(-)
  create mode 100644 Extension/Domination/ARCHITECTURE.md
+ create mode 100644 Extension/Domination/MAKING-PARKS.md
  create mode 100644 Extension/Domination/README.md
  create mode 100644 Extension/Domination/Test/domination_net_tests.cpp
  create mode 100644 Extension/Domination/Test/domination_tests.cpp
@@ -141,10 +183,34 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
  create mode 100644 Extension/Domination/domination_parks.h
  create mode 100644 Extension/Domination/domination_sync.cpp
  create mode 100644 Extension/Domination/domination_sync.h
+ create mode 100644 Extension/Domination/domination_tools.cpp
  create mode 100644 Extension/Domination/domination_wire.cpp
  create mode 100644 Extension/Domination/domination_wire.h
+ create mode 100644 Extension/Domination/parks/s3i-banks.json
+ create mode 100644 Extension/Domination/parks/s3i-hillpark.json
+ create mode 100644 Extension/Domination/parks/s3i-industrial.json
+ create mode 100644 Extension/Domination/parks/s3i-loans.json
+ create mode 100644 Extension/Domination/parks/sanvan-bridge.json
+ create mode 100644 Extension/Domination/parks/sanvan-elone.json
+ create mode 100644 Extension/Domination/parks/sanvan-flowtopia.json
+ create mode 100644 Extension/Domination/parks/sanvan-mcorp.json
+ create mode 100644 Extension/Domination/parks/sanvan-seaside.json
+ create mode 100644 Extension/Domination/parks/skate3improved-redbowl.json
+ create mode 100644 Extension/Domination/parks/specs/s3i-banks.spec.json
+ create mode 100644 Extension/Domination/parks/specs/s3i-hillpark.spec.json
+ create mode 100644 Extension/Domination/parks/specs/s3i-industrial.spec.json
+ create mode 100644 Extension/Domination/parks/specs/s3i-loans.spec.json
+ create mode 100644 Extension/Domination/parks/specs/sanvan-bridge.spec.json
+ create mode 100644 Extension/Domination/parks/specs/sanvan-elone.spec.json
+ create mode 100644 Extension/Domination/parks/specs/sanvan-flowtopia.spec.json
+ create mode 100644 Extension/Domination/parks/specs/sanvan-mcorp.spec.json
+ create mode 100644 Extension/Domination/parks/specs/sanvan-seaside.spec.json
+ create mode 100644 Extension/Domination/tools/build_park.py
+ create mode 100644 Extension/Domination/tools/find_features.py
  create mode 100644 Extension/Domination/tools/make_builtin.py
+ create mode 100644 Extension/Domination/tools/make_pack.py
  create mode 100644 Extension/Domination/tools/make_park.py
+ create mode 100644 Extension/Domination/tools/render_scan.py
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 index b6b222d..fba288e 100644
@@ -199,10 +265,10 @@ index 0caee4c..8005ff7 100644
  void register_grind_exit_commands(Commands &);
 diff --git a/Extension/Domination/ARCHITECTURE.md b/Extension/Domination/ARCHITECTURE.md
 new file mode 100644
-index 0000000..4ff0374
+index 0000000..c16e460
 --- /dev/null
 +++ b/Extension/Domination/ARCHITECTURE.md
-@@ -0,0 +1,112 @@
+@@ -0,0 +1,114 @@
 +# Domination: how it's built
 +
 +For ReSkate's maintainers and their coding agents: where the game logic is, what it depends on, and how to change it without breaking multiplayer. README.md covers playing and park files.
@@ -229,7 +295,9 @@ index 0000000..4ff0374
 +| `domination_overlay.cpp` | Drawing: markers, outlines, edge arrows, HUD, feed, results |
 +| `domination_commands.cpp` | The `domination ...` console commands |
 +| `domination_internal.h` | The game side's shared state (not for other code) |
-+| `domination_parks.h` | The built-in parks: five on San Vansterdam and five on the Skate 3 map mod (generated by `tools/make_builtin.py`) |
++| `domination_parks.h` | The built-in parks: five on San Vansterdam and five on the Skate 3 map mod, generated by `tools/make_builtin.py` from `parks/*.json` |
++| `domination_tools.cpp` | Park-making: `domination scan` (height maps), `tp` and `survey` (MAKING-PARKS.md) |
++| `parks/`, `tools/` | The built-in parks' files and specs; the scripts that build parks, build them in, and pack them as mods |
 +| `domination.h` | The API for the rest of ReSkate |
 +
 +## Touchpoints outside this folder
@@ -308,19 +376,142 @@ index 0000000..4ff0374
 +- **A new round option:** a bit in `wire::Option` (teams is the only one now) and in `sync::Options`, its rule in `domination_sync.cpp`, a `domination set` word, the menu panel (`domination_menu.cpp`). Older builds refuse unknown option bits, so bump `wire::version`.
 +- **A new or changed message:** bump `wire::version` (4 now). Players on other versions are told once why their rounds don't meet.
 +- **A rule change:** add a scenario to `Test/domination_net_tests.cpp` first.
-+- **A new park:** a JSON file (README "Park files"). To build one in, run `tools/make_builtin.py`. Changing a park's spot ids changes its hash, and players on different park versions can't play together (they're told).
++- **A new park:** a JSON file, shared as a mod (MAKING-PARKS.md). To build one in, add it to `parks/` and run `tools/make_builtin.py`. Changing a park's spot ids changes its hash, and players on different park versions can't play together (they're told).
 +- **A new game build:** what breaks first is `domination_hud.cpp`: `ScoringHUDViewModel`'s field hashes and the HUD model lookup. When the model is found, the log names each field's offset, or `missing`.
 +
 +## Tests
 +
 +`-DDINGOSDK_BUILD_DOMINATION_TESTS=ON`, then `ctest -R domination`. That runs `domination` and `domination_net`, in a few seconds. Optional:
 +- `-DDINGOSDK_DOMINATION_PARK=<park.json>` checks a park file against the built-in copy.
+diff --git a/Extension/Domination/MAKING-PARKS.md b/Extension/Domination/MAKING-PARKS.md
+new file mode 100644
+index 0000000..8570b9a
+--- /dev/null
++++ b/Extension/Domination/MAKING-PARKS.md
+@@ -0,0 +1,117 @@
++# Making Domination parks, and packaging them as mods
++
++A Domination park is one JSON file: the level it belongs to, its spots (footprint, height range, marker) and its starts. Making one needs the game and a few Python scripts. Sharing one needs no pull request: parks travel as mods.
++
++The ten parks ReSkate ships were made this way. Their files are in `parks/`, the specs they were built from in `parks/specs/`, and the red-bowl park's maker in `tools/make_park.py`.
++
++## What you need
++
++- ReSkate with Domination, and the map the park is for.
++- Python 3 with numpy, matplotlib and Pillow (`pip install numpy matplotlib pillow`; `find_features.py` also wants scipy).
++- The console (`~`). Every command below is typed there.
++
++## 1. Find the place
++
++- `trainer where` prints where the skater stands (x, y, z; y is up).
++- `domination tp <x> <y|ground> <z> [heading]` puts the skater somewhere, facing a heading in degrees from +z towards +x. `ground` stands them on the highest ground below 200 m, but only where the map has loaded collision (near the skater).
++- `domination survey <places file> [half size] [step]` visits a list of places (one `x y z` per line) unattended. At each one it waits for the area to load, writes a height map of the square around it, and looks north, east, south and west for 1.5 s each. Take pictures of the game window alongside to compare candidates. `domination survey stop` ends it.
++
++## 2. Measure it: a height map
++
++Stand in the middle of the park first (`domination tp <x> <y> <z>`): the game loads collision only around the skater, so a scan of somewhere far away finds nothing, and `domination status` then reports every point missed. Give it a few seconds to load, then:
++
++```
++domination scan <x0> <z0> <x1> <z1> 0.25
++```
++
++It casts one ground ray per point of a 0.25 m grid, for 6 ms of each frame, and writes `scan-<time>.bin` to `%LOCALAPPDATA%\ReSkate\domination\`. `domination status` shows how far it got. After the step come the highest and lowest heights to look between, 60 and -40 by default. Set them round the ground you stand on (`trainer where` gives its height): San Vansterdam's parks are near 195 m up, so `domination scan ... 0.25 260 150` there. For a park under a roof or a bridge, set the top below it.
++
++Render it:
++
++```
++python -I tools/render_scan.py scan-<time>.bin mypark
++```
++
++This writes `mypark-height.png` (heights over hillshade, a 10 m grid, game x to the right, z down), `mypark-slope.png` (flat dark, walls bright) and `mypark.npz`, the height map the next steps read. `tools/find_features.py mypark.npz mypark --outline x z x z ...` lists the raised features (ledges, boxes, banks, rails) and the dips (bowls, pools) inside an outline, as a starting point.
++
++## 3. Draw the spots: a spec
++
++From the pictures, write a spec: each spot's footprint seen from above, and the starts. The format is at the top of `tools/build_park.py`, and `parks/specs/` has nine real ones.
++
++```json
++{"id": "mypark", "level": "levels/game/bam_levelroot/bam_levelroot", "park": "My Park", "map": "San Vansterdam",
++ "view": [-315, 1400, -138, 1615],
++ "spots": [
++   {"id": "big-bowl", "name": "Big bowl", "kind": "bowl", "points": [[-200, 1551], [-160, 1553], [-151, 1576], [-170, 1594], [-196, 1594]]},
++   {"id": "long-ledge", "name": "Long ledge", "kind": "ledge", "a": [-265.5, 1513.5], "b": [-253, 1527.5], "r": 2.2}
++ ],
++ "starts": [[-292, 1440, 42], [-305, 1480, 68]]}
++```
++
++- **A spot** is a polygon (`points`, x and z) or a capsule round a line (`a`, `b`, radius `r`): rails and ledges.
++- **A spot is something to own:** a bowl, a ledge group, a rail, a bank, a box. Spots may not overlap.
++- **Ids** never change once a park is out: players with other spot ids can't play together.
++- **Starts** are `[x, z, heading]`, outside the spots, facing into the park. One per player is best (up to 64).
++- **For a map mod:** add `"package": "Owner-Name"` (its Thunderstore name), so a player without the map is told what to get.
++
++## 4. Build the park file
++
++```
++python -I tools/build_park.py mypark.spec.json mypark.npz mypark.json mypark.png
++```
++
++It measures each spot from the height map: the height range runs from its floor - 1 m to its top + 5 m, and the marker floats 2.5 m over its top. It checks that no two spots overlap and no start stands on one, and draws the park over the height map in `mypark.png`. For a park under a bridge, add `"ceiling": <height>` to the spec.
++
++## 5. Try it in game
++
++1. Copy `mypark.json` to `%LOCALAPPDATA%\ReSkate\domination\parks\`.
++2. Load the map. `domination parks` lists it; `domination set park mypark` picks it.
++3. Stand on each spot: `domination status` names the spot you are on. The outlines on the ground show its edge.
++4. Play a round alone: `domination start solo 60`.
++
++A park file whose id is a built-in park's replaces that park, so this is also how a built-in park is changed and checked.
++
++## 6. Share it
++
++### As a park pack (a mod)
++
++```
++python -I tools/make_pack.py out My_Domination_Parks 1.0.0 "What's in it, at most 250 characters." mypark.json [more.json ...]
++```
++
++This writes `out/My_Domination_Parks-1.0.0.zip`:
++
++| File | What |
++|---|---|
++| `manifest.json` | Thunderstore's manifest: name, version, description, no dependencies |
++| `README.md` | the parks, the maps they need, how to play them |
++| `icon.png` | 256 x 256, the parks' spots seen from above |
++| `domination/<id>.json` | the park files |
++
++- **Upload it** to Thunderstore's ReSkate community. Players install it from the launcher's MODS page.
++- **Or unzip it** into `Mods\My_Domination_Parks\` by hand.
++- **It carries no game data,** so it loads on any game build. Domination reads parks only from mods switched on in the launcher.
++- **Everyone in a round needs the same version.** Players with another version of a park are told so.
++- **A new version keeps the ids.** Raise the version number with every change.
++
++The ten built-in parks are also packed this way, as `Domination_Parks_San_Vansterdam` and `Domination_Parks_Skate_3_Improved`:
++
++```
++python -I tools/make_pack.py out Domination_Parks_San_Vansterdam 1.0.0 "..." parks/sanvan-*.json
++python -I tools/make_pack.py out Domination_Parks_Skate_3_Improved 1.0.0 "..." parks/skate3improved-redbowl.json parks/s3i-*.json
++```
++
++A pack's park overrides the built-in park of the same id, so these packs can update the shipped parks between ReSkate releases.
++
++### Inside a map mod
++
++A map's author can ship its parks with the map: put `domination-<id>.json` files beside the mod's `manifest.json`. They load whenever the map mod is switched on.
++
++### Built into ReSkate (a pull request)
++
++1. Add the park file to `parks/`, and its spec to `parks/specs/`.
++2. Regenerate the built-in parks, every file in the order they appear in the menu:
++   ```
++   python -I tools/make_builtin.py domination_parks.h parks/sanvan-seaside.json parks/sanvan-bridge.json parks/sanvan-mcorp.json parks/sanvan-flowtopia.json parks/sanvan-elone.json parks/skate3improved-redbowl.json parks/s3i-hillpark.json parks/s3i-industrial.json parks/s3i-banks.json parks/s3i-loans.json parks/<new>.json
++   ```
++3. `ctest -R domination` parses every built-in park (the `domination` test fails on a bad one).
 diff --git a/Extension/Domination/README.md b/Extension/Domination/README.md
 new file mode 100644
-index 0000000..65b050d
+index 0000000..af85270
 --- /dev/null
 +++ b/Extension/Domination/README.md
-@@ -0,0 +1,147 @@
+@@ -0,0 +1,150 @@
 +# Domination
 +
 +skate. 3's Domination, for ReSkate. Own the most spots in a park. The best single trick landed on a spot owns it, and a higher one steals it. Play alone, or with everyone in a session.
@@ -370,6 +561,9 @@ index 0000000..65b050d
 +| `domination status` | What's going on |
 +| `domination spots` | The spots and their scores |
 +| `domination parks` | Every park, its map, and whether that map is installed here |
++| `domination scan <x0> <z0> <x1> <z1> [step] [top] [bottom]` | Park-making: a height map of an area, written to a file |
++| `domination tp <x> <y\|ground> <z> [heading]` | Park-making: a teleport facing a heading |
++| `domination survey <places file> [half size] [step]` \| `stop` | Park-making: visit a list of places, a height map and four looks at each |
 +| `domination stats` | The rounds you have played to the end: in all, with others and won, per map and per park (saved with your profile as `ReSkate.Domination.*`; the tab shows them too) |
 +| `domination set duration <s>\|players everyone\|solo\|teams on\|off\|map next\|previous\|park <id>\|next\|previous` | The next round's settings (`domination set` alone shows them) |
 +
@@ -441,13 +635,13 @@ index 0000000..65b050d
 +- **Built in** (`domination_parks.h`):
 +  - five on San Vansterdam, where the game puts its own skate challenges: Rolling Waves (12 spots), Bonski Park under the bridge (8), Hartcore Plaza (12), FlowTopia (9) and El-One Courts (5);
 +  - five on the Skate 3 map mod (Skate3Improved): the red-bowl park (20 spots: bowls, banks, ledges, rails, the funbox, four mounds and a curb), Hillside park (9: a deep bowl, a pool, the full pipe, hips, a pyramid and ledges), Industrial bowls (7), Sunken banks (6) and Loans plaza (6).
-+- **Files:** `<LOCALAPPDATA>\ReSkate\domination\parks\*.json`, and `Mods\<mod>\domination*.json`, so a map can ship its own.
++- **Files:** `<LOCALAPPDATA>\ReSkate\domination\parks\*.json`, and in every mod switched on in the launcher:
++  - `Mods\<mod>\domination*.json`, beside its manifest, so a map mod ships its own parks;
++  - `Mods\<mod>\domination\*.json`, so a mod can be a pack of parks and nothing else.
++- **A park pack on Thunderstore** is a zip of `manifest.json`, `icon.png`, `README.md` and a `domination` folder of park files. It ships no game data, so it loads on any game build. Players install it from the launcher's MODS page like any mod, and its parks appear in the Map and Park dropdowns. Everyone in a round needs the same park file (the park's spot ids are checked; players with another version are told).
 +- **Priority:** a file overrides a built-in park of the same name.
 +
-+**Making a park for a map** (the tools are in `tools/`; Python with numpy and matplotlib):
-+- A park file can be written by hand: `trainer where` gives the skater's position, for the footprints, the height ranges and the starts. Put it in the parks folder, load the map, and `domination status` and `domination spots` say whether it loaded and where you stand.
-+- `make_park.py` is how the red-bowl park was made: it holds that park's spots and starts, measures each spot's height range and marker from a height map of the park (an `.npz` of heights `h` over the grid `xs`, `zs`), checks for overlaps, and draws the result. A copy of it makes another park.
-+- `make_builtin.py domination_parks.h park.json...` builds parks into ReSkate.
++**Making a park, and sharing it as a mod:** [MAKING-PARKS.md](MAKING-PARKS.md) goes through it step by step: finding the place (`domination tp`, `domination survey`), a height map of it (`domination scan`, `tools/render_scan.py`), the spots in a spec, the park file (`tools/build_park.py`), trying it in game, and packaging parks as a mod (`tools/make_pack.py`) or building them into ReSkate (`tools/make_builtin.py`). The ten built-in parks' files are in `parks/`, with the specs they were built from in `parks/specs/`.
 +
 +## Tests
 +
@@ -1840,10 +2034,10 @@ index 0000000..6086fe0
 +}
 diff --git a/Extension/Domination/domination.cpp b/Extension/Domination/domination.cpp
 new file mode 100644
-index 0000000..ea2716d
+index 0000000..0e3c8f2
 --- /dev/null
 +++ b/Extension/Domination/domination.cpp
-@@ -0,0 +1,959 @@
+@@ -0,0 +1,994 @@
 +#include "domination.h"
 +#include "domination_internal.h"
 +#include "domination_model.h"
@@ -2030,11 +2224,11 @@ index 0000000..ea2716d
 +    const auto &m = *match_of(s);
 +    const auto &spot = park.spots[out.spot].name;
 +    if (out.before == m.self)
-+        toast(s, std::format("{} stole {} from you ({})", name_of(s, out.player), spot, points(out.score)), 3, out.player);
++        toast(s, std::format("{} STOLE {} FROM YOU   {}", name_of(s, out.player), spot, points(out.score)), 3, out.player);
 +    else if (m.ours(out.before) && !m.ours(out.player))
-+        toast(s, std::format("{} stole {} from {} ({})", name_of(s, out.player), spot, name_of(s, out.before), points(out.score)), 3, out.player);
++        toast(s, std::format("{} STOLE {} FROM {}   {}", name_of(s, out.player), spot, name_of(s, out.before), points(out.score)), 3, out.player);
 +    else
-+        toast(s, std::format("{} took {} ({})", name_of(s, out.player), spot, points(out.score)), 0, out.player);
++        toast(s, std::format("{} TOOK {}   {}", name_of(s, out.player), spot, points(out.score)), 0, out.player);
 +}
 +
 +// The node's news, turned into what the player sees and hears.
@@ -2110,13 +2304,13 @@ index 0000000..ea2716d
 +    std::string verdict;
 +    if (out.taken()) {
 +        verdict = out.before ? std::format("TAKEN from {} ({})", name_of(s, out.before), points(out.before_score)) : "TAKEN";
-+        toast(s, std::format("{}  {}  TAKEN{}", gain, name, out.before ? " from " + name_of(s, out.before) : ""), 1);
++        toast(s, out.before ? std::format("YOU STOLE {} FROM {}   {}", name, name_of(s, out.before), gain) : std::format("YOU TOOK {}   {}", name, gain), 1);
 +    } else if (out.improved()) {
 +        verdict = std::format("new best (was {})", points(out.before_score));
-+        toast(s, std::format("{}  {}  new best", gain, name), 1);
++        toast(s, std::format("NEW BEST ON {}   {}", name, gain), 1);
 +    } else {
 +        verdict = std::format("short of {} ({})", name_of(s, out.before), points(out.before_score));
-+        toast(s, std::format("{}  {}  needs {} ({})", gain, name, points(out.before_score), name_of(s, out.before)), 2);
++        toast(s, std::format("{} ON {}: {} NEEDS {}", gain, name, name_of(s, out.before), points(out.before_score)), 2);
 +    }
 +    say(logging::Level::info, std::format("trick +{} on {}: {}. You own {} of {}.", points(e.points), park.spots[e.spot].id, verdict,
 +                                          m.board.owned(m.self), park.spots.size()));
@@ -2233,9 +2427,37 @@ index 0000000..ea2716d
 +void on_client_tick() noexcept {
 +    auto &s = state();
 +    std::lock_guard lock(s.mutex);
++    try {
++        tick_scan(s);
++    } catch (...) {
++        s.scan.reset();
++        s.last_scan = "error: the scan stopped after a native error";
++        say(logging::Level::warning, "scan stopped after a native error.");
++    }
 +    const auto now = Clock::now();
 +    const double dt = s.last_tick == Clock::time_point{} ? 0 : std::chrono::duration<double>(now - s.last_tick).count();
 +    s.last_tick = now;
++    if (s.teleport && trainer::telemetry().skater) {
++        auto [position, heading] = *s.teleport;
++        s.teleport.reset();
++        // `ground`: standing 0.5 m over the highest ground below 200 m (a start stands them so). Collision
++        // loads only around the skater, so far away there is none to stand on yet.
++        const auto ground = std::isnan(position[1]) ? local_ground_height(position[0], position[2], 200, -100) : std::optional<float>(position[1] - 0.5f);
++        if (!ground)
++            say(logging::Level::warning, std::format("teleport to ({:.1f}, ground, {:.1f}) not done: no ground found there yet (it loads near the skater); give a height",
++                                                     position[0], position[2]));
++        else {
++            position[1] = *ground + 0.5f;
++            say(logging::Level::info, std::format("teleport to ({:.1f}, {:.2f}, {:.1f}) facing {:.0f}: {}", position[0], position[1], position[2], heading,
++                                                  face(position, heading) ? "done" : "unavailable"));
++        }
++    }
++    try {
++        tick_survey(s, now);
++    } catch (...) {
++        s.survey.reset();
++        say(logging::Level::warning, "survey stopped after a native error.");
++    }
 +    if (s.pending) {
 +        auto &p = *s.pending;
 +        const auto t = trainer::telemetry();
@@ -2445,6 +2667,8 @@ index 0000000..ea2716d
 +        const int here = t.skater ? spot_at(*s.park, {t.position[0], t.position[1], t.position[2]}) : -1;
 +        text += !t.skater ? " No skater." : here >= 0 ? " You are on " + s.park->spots[here].name + "." : " You are on no spot.";
 +    }
++    if (s.scan) text += std::format(" Scan running: {} of {} points.", s.scan->next, s.scan->heights.size());
++    else if (!s.last_scan.empty()) text += " Last scan: " + s.last_scan;
 +    return text;
 +}
 +
@@ -2665,6 +2889,7 @@ index 0000000..ea2716d
 +    const auto nm = ms_of(now);
 +    view.running = !live.finished;
 +    view.results = live.finished && now < s.results_until;
++    if (view.results) view.results_age = results_shown - std::chrono::duration<double>(s.results_until - now).count();
 +    view.visible = view.running || view.results;
 +    if (!view.visible) return view;
 +    view.base = s.base;
@@ -2782,6 +3007,8 @@ index 0000000..ea2716d
 +        if (live.multiplayer && !results.rows.empty()) {
 +            const auto &first = results.rows.front();
 +            const bool tie = results.rows.size() > 1 && results.rows[1].spots == first.spots && results.rows[1].total == first.total;
++            view.tie = tie;
++            view.you_won = !tie && (view.teams ? static_cast<int>(first.player) == view.my_team : first.player == live.self);
 +            view.winner = tie ? std::string("A TIE") : view.teams ? std::format("{} WINS", team_name(static_cast<int>(first.player)))
 +                                                                  : first.player == live.self ? std::string("YOU WIN")
 +                                                                                              : std::format("{} WINS", name_of(s, first.player));
@@ -2792,6 +3019,8 @@ index 0000000..ea2716d
 +    while (!s.toasts.empty() && s.toasts.front().until < now) s.toasts.pop_front();
 +    for (const auto &t : s.toasts) {
 +        OverlayToast toast{t.text, t.kind};
++        toast.left = std::chrono::duration<float>(t.until - now).count();
++        toast.age = static_cast<float>(toast_shown) - toast.left;
 +        if (t.who && t.who != live.self) { // another player's claim: in their colour (their team's)
 +            toast.owner = kind_of(t.who);
 +            toast.id = t.who;
@@ -2805,10 +3034,10 @@ index 0000000..ea2716d
 +}
 diff --git a/Extension/Domination/domination.h b/Extension/Domination/domination.h
 new file mode 100644
-index 0000000..042bc27
+index 0000000..c7d6531
 --- /dev/null
 +++ b/Extension/Domination/domination.h
-@@ -0,0 +1,161 @@
+@@ -0,0 +1,170 @@
 +#pragma once
 +#include <array>
 +#include <cstdint>
@@ -2849,6 +3078,12 @@ index 0000000..042bc27
 +std::string parks();
 +// The rounds this player has played to the end: in all, with others and won, per map and per park.
 +std::string stats();
++// Park-making: a height map of an area (one ground ray per grid point, written to a file), a
++// teleport facing a heading (degrees from +z towards +x), and a survey of a list of places (at
++// each: a height map around it, and the skater facing north, east, south and west).
++std::string scan(const std::vector<std::string> &words);
++std::string teleport(const std::vector<std::string> &words);
++std::string survey(const std::vector<std::string> &words);
 +// Back into the session's round, for a player who left it (everyone else is in it already).
 +std::string join();
 +// The next round's settings: duration <seconds>, players everyone|solo, teams on|off.
@@ -2943,6 +3178,7 @@ index 0000000..042bc27
 +    std::uint64_t id{};
 +    int team = -1;
 +    int colour = -1;
++    float age{}, left{}; // seconds since it came, and until it goes
 +};
 +struct OverlayView {
 +    bool visible{};
@@ -2957,6 +3193,8 @@ index 0000000..042bc27
 +    std::vector<OverlayStanding> standings; // most spots first; with teams, the teams
 +    // Results: who won, and the round's awards (empty when nobody earned one).
 +    std::string winner, most_steals, best_trick, held_longest;
++    double results_age{};    // seconds the results have been up
++    bool you_won{}, tie{};   // multiplayer: this player (or their team) came first; nobody did
 +    int taken{};   // spots you own
 +    float total{}; // their scores
 +    std::string trick_spot; // the spot the trick going on counts for (empty: none)
@@ -2972,10 +3210,10 @@ index 0000000..042bc27
 +}
 diff --git a/Extension/Domination/domination_commands.cpp b/Extension/Domination/domination_commands.cpp
 new file mode 100644
-index 0000000..15ff8f7
+index 0000000..1b4e4bb
 --- /dev/null
 +++ b/Extension/Domination/domination_commands.cpp
-@@ -0,0 +1,57 @@
+@@ -0,0 +1,64 @@
 +#include "domination.h"
 +#include "Extension/Console/commands.h"
 +
@@ -3006,6 +3244,13 @@ index 0000000..15ff8f7
 +         [](const std::vector<std::string> &) { return domination::parks(); }},
 +        {"stats", "The rounds you have played to the end: in all, with others and won, per map and per park", nullptr,
 +         [](const std::vector<std::string> &) { return domination::stats(); }},
++        {"scan", "Park-making: write a height map of an area (one ground ray per grid point)", "<x0> <z0> <x1> <z1> [step] [top] [bottom]",
++         [](const std::vector<std::string> &words) { return domination::scan(words); }},
++        {"tp", "Park-making: teleport facing a heading (degrees from +z towards +x)", "<x> <y|ground> <z> [heading]",
++         [](const std::vector<std::string> &words) { return domination::teleport(words); }},
++        {"survey", "Park-making: visit a list of places (a file of x y z lines): a height map around each, and a look north, east, south and west",
++         "<places file> [half size] [step] | stop",
++         [](const std::vector<std::string> &words) { return domination::survey(words); }},
 +    };
 +    for (const auto &verb : verbs) {
 +        std::vector<Argument> arguments;
@@ -3035,10 +3280,10 @@ index 0000000..15ff8f7
 +} // namespace dingosdk::console
 diff --git a/Extension/Domination/domination_files.cpp b/Extension/Domination/domination_files.cpp
 new file mode 100644
-index 0000000..58b739c
+index 0000000..2ec0533
 --- /dev/null
 +++ b/Extension/Domination/domination_files.cpp
-@@ -0,0 +1,349 @@
+@@ -0,0 +1,363 @@
 +#include "domination_internal.h"
 +#include "domination_parks.h"
 +#include "Engine/Core/Platform/memory.h"
@@ -3050,6 +3295,7 @@ index 0000000..58b739c
 +#include <algorithm>
 +#include <cctype>
 +#include <charconv>
++#include <ctime>
 +#include <format>
 +#include <iterator>
 +
@@ -3069,6 +3315,14 @@ index 0000000..58b739c
 +        if (raw) CoTaskMemFree(raw);
 +    }
 +    return root.empty() ? root : root / L"ReSkate" / L"domination";
++}
++std::string stamp() {
++    const auto now = std::time(nullptr);
++    std::tm local{};
++    localtime_s(&local, &now);
++    char text[32]{};
++    std::strftime(text, sizeof text, "%Y%m%d-%H%M%S", &local);
++    return text;
 +}
 +std::filesystem::path game_directory() {
 +    std::vector<wchar_t> exe(32768);
@@ -3117,14 +3371,19 @@ index 0000000..58b739c
 +    const auto own = data_directory() / L"parks";
 +    for (std::filesystem::directory_iterator it(own, error), end; it != end && !error; it.increment(error))
 +        if (it->path().extension() == L".json") files.push_back(it->path());
-+    const auto mods = game_directory() / L"Mods";
-+    for (std::filesystem::directory_iterator it(mods, error), end; it != end && !error; it.increment(error)) {
-+        if (!it->is_directory(error)) continue;
++    // Mods switched on in the launcher, highest priority first: domination*.json beside the mod's
++    // manifest (a map mod shipping its parks), and every .json in its domination folder (a pack of
++    // parks, a mod of nothing else).
++    const auto list = mods::scan_mods(game_directory());
++    for (const auto &entry : list.entries) {
++        if (!entry.enabled || !entry.mod.outdated.empty()) continue;
 +        std::error_code inner;
-+        for (std::filesystem::directory_iterator file(it->path(), inner), last; file != last && !inner; file.increment(inner)) {
++        for (std::filesystem::directory_iterator file(entry.mod.directory, inner), last; file != last && !inner; file.increment(inner)) {
 +            const auto name = lower(file->path().filename().string());
 +            if (name.starts_with("domination") && name.ends_with(".json")) files.push_back(file->path());
 +        }
++        for (std::filesystem::directory_iterator file(entry.mod.directory / L"domination", inner), last; file != last && !inner; file.increment(inner))
++            if (lower(file->path().extension().string()) == ".json") files.push_back(file->path());
 +    }
 +    return files;
 +}
@@ -3476,16 +3735,17 @@ index 0000000..2ff2899
 +} // namespace dingosdk::domination::detail
 diff --git a/Extension/Domination/domination_internal.h b/Extension/Domination/domination_internal.h
 new file mode 100644
-index 0000000..61ebd5f
+index 0000000..b6d2e49
 --- /dev/null
 +++ b/Extension/Domination/domination_internal.h
-@@ -0,0 +1,239 @@
+@@ -0,0 +1,287 @@
 +#pragma once
 +// Domination's game side, shared by its files. Not for other code: domination.h is the API.
 +// - domination.cpp: rounds (the game around domination_sync.h's rules), the console, the menu's
 +//   snapshot and the overlay's view;
 +// - domination_files.cpp: park files, the spots' outlines on the ground;
-+// - domination_hud.cpp: tricks read from skate.'s score HUD.
++// - domination_hud.cpp: tricks read from skate.'s score HUD;
++// - domination_tools.cpp: park-making (scan, tp, survey).
 +// The rules themselves are apart from the game: domination_model.h (parks, spots, reading
 +// tricks, the board, a round's results), domination_sync.h (multiplayer rounds) and
 +// domination_wire.h (the messages).
@@ -3616,6 +3876,43 @@ index 0000000..61ebd5f
 +// waits this long for them (one still loading joins the round when they arrive).
 +constexpr auto settle_in_session = std::chrono::seconds(10);
 +
++// ---- scan -------------------------------------------------------------------------------
++// One downward ray per grid point, x fastest; heights in world metres, NaN where nothing was hit.
++// File: "DOMSCAN1", u32 nx, u32 nz, f32 x0, z0, step, top, bottom, then nx*nz f32.
++struct Scan {
++    float x0{}, z0{}, step{}, top{}, bottom{};
++    std::uint32_t nx{}, nz{};
++    std::vector<float> heights;
++    std::size_t next{}, misses{};
++    Clock::time_point started;
++};
++inline constexpr auto scan_budget = std::chrono::milliseconds(6); // of each client tick
++constexpr std::size_t scan_limit = 8'000'000;              // points
++inline Scan scan_job(float x0, float z0, float x1, float z1, float step, float top, float bottom) {
++    const auto nx = static_cast<std::uint32_t>(std::floor((x1 - x0) / step)) + 1, nz = static_cast<std::uint32_t>(std::floor((z1 - z0) / step)) + 1;
++    Scan job{x0, z0, step, top, bottom, nx, nz};
++    job.heights.assign(static_cast<std::size_t>(nx) * nz, std::numeric_limits<float>::quiet_NaN());
++    job.started = Clock::now();
++    return job;
++}
++
++// ---- survey -------------------------------------------------------------------------------
++// A walk through a list of places, for finding and making parks (`domination survey`). At each
++// place the skater is put there and waits for the area to load (the game loads collision only
++// around the skater); the ground is found; a height map of the square around it is written (as
++// `domination scan`); then the skater faces north (+z), east (+x), south and west in turn, each
++// pose logged with its time, for pictures of the game's window taken alongside.
++struct Survey {
++    std::vector<std::array<float, 3>> places;
++    std::size_t next{}, missed{};
++    float half{}, step{}; // the height map's half size and step (half 0: none)
++    int phase{};          // 0 arrive, 1 look for the ground, 2 the height map, 3-6 the four headings
++    float ground{};
++    Clock::time_point until, started;
++};
++constexpr auto survey_settle = std::chrono::seconds(3);
++constexpr auto survey_look = std::chrono::milliseconds(1500);
++
 +// Every park there is (the files, then the ones built in), whatever map is loaded.
 +struct KnownPark {
 +    std::string id; // the file's name without .json
@@ -3665,6 +3962,11 @@ index 0000000..61ebd5f
 +    bool skater{};
 +    int here = -1;
 +    Hud hud;
++    std::optional<Scan> scan;
++    std::string last_scan; // the last finished scan's file, or why it failed
++    // `domination tp`: a teleport facing a heading (degrees), done at the next client tick.
++    std::optional<std::pair<Vec3, float>> teleport;
++    std::optional<Survey> survey;
 +    // The spots' outlines on the ground: points along their edges about half a metre apart, each one's
 +    // height found by a ray once the skater is near (collision streams in around them; client
 +    // thread, a little each tick). A spot's outline is drawn once all its heights are known.
@@ -3715,6 +4017,11 @@ index 0000000..61ebd5f
 +// Outlines are drawn near the skater only, fading out between these (m, seen from above).
 +inline constexpr float outline_near = 18, outline_far = 32;
 +void tick_sight(State &s, const Vec3 &skater);
++std::string stamp(); // the local time, for file names: 20261017-130012
++// ---- park-making (domination_tools.cpp) ----------------------------------------------------
++void tick_scan(State &s);
++void tick_survey(State &s, Clock::time_point now);
++bool face(const Vec3 &p, float heading);
 +// ---- the score HUD (domination_hud.cpp) ----------------------------------------------------
 +// Reads every watched field into `now`. False without the model.
 +bool read_hud(State &s);
@@ -4549,10 +4856,10 @@ index 0000000..5ff3c0a
 +}
 diff --git a/Extension/Domination/domination_overlay.cpp b/Extension/Domination/domination_overlay.cpp
 new file mode 100644
-index 0000000..0a7dae9
+index 0000000..dbc3448
 --- /dev/null
 +++ b/Extension/Domination/domination_overlay.cpp
-@@ -0,0 +1,586 @@
+@@ -0,0 +1,696 @@
 +#include "domination_overlay.h"
 +#include "domination.h"
 +#include "Engine/Core/Platform/memory.h"
@@ -4953,64 +5260,157 @@ index 0000000..0a7dae9
 +    return std::format("{}:{:02}", whole / 60, whole % 60);
 +}
 +
-+// Results: who won, the standings, the round's awards, and who owns each spot.
++// ---- animation (times are the view's ages, in seconds) ----------------------------------
++float unit(float t) { return std::clamp(t, 0.0f, 1.0f); }
++float ease_out(float t) {
++    t = 1 - unit(t);
++    return 1 - t * t * t;
++}
++// Overshoots a little before it settles: a pop.
++float ease_pop(float t) {
++    t = unit(t) - 1;
++    constexpr float c = 2.2f;
++    return 1 + (c + 1) * t * t * t + c * t * t;
++}
++// 0 to 1 over `in` seconds from `age`, and back to 0 over the last `out` seconds of `left`.
++float fade(float age, float left, float in, float out) { return unit(age / in) * unit(left / out); }
++// A slanted bar, like skate.'s brushed banners: from x0 to x1 at y, `height` tall, leaning right.
++void slant_bar(ImDrawList *draw, float x0, float x1, float y, float height, float lean, ImU32 colour) {
++    if (x1 <= x0) return;
++    draw->AddQuadFilled(ImVec2(x0 + lean, y), ImVec2(x1 + lean, y), ImVec2(x1 - lean, y + height), ImVec2(x0 - lean, y + height), colour);
++}
++// Sparks thrown out from `at`: short lines that fly out and fade over `life` seconds.
++void sparks(ImDrawList *draw, ImVec2 at, float k, float age, float life, ImU32 colour, unsigned seed, int count = 14) {
++    if (age <= 0 || age >= life) return;
++    const float t = age / life, out = ease_out(t);
++    for (int i = 0; i < count; ++i) {
++        const float angle = (static_cast<float>(i) + theme::noise(seed + i) * 0.6f) * 6.2831853f / static_cast<float>(count);
++        const float reach = (150 + 140 * theme::noise(seed * 7 + i)) * k, length = (34 - 26 * t) * k;
++        const ImVec2 d(std::cos(angle), std::sin(angle) * 0.55f);
++        const ImVec2 p0(at.x + d.x * reach * out, at.y + d.y * reach * out), p1(p0.x - d.x * length, p0.y - d.y * length);
++        draw->AddLine(p1, p0, faded(i % 3 == 0 ? theme::white : colour, 1 - t), (4 - 2 * t) * k);
++    }
++}
++// Results: who won, the standings, the round's awards, and who owns each spot, coming in one after
++// another: the screen darkens, the panel slides up, the winner's band wipes in and the winner pops
++// (with sparks when it's you), the standings slide in row by row with their points
++// counting up, the awards pop in as cards, then the spots.
 +void draw_results(ImDrawList *draw, ImFont *title, ImFont *bold, ImFont *body, float k, const domination::OverlayView &v) {
 +    const auto display = ImGui::GetIO().DisplaySize;
-+    const float line = 24 * k, w = 780 * k;
-+    std::vector<std::pair<std::string, ImU32>> rows;
-+    if (v.multiplayer)
-+        for (const auto i : shown_rows(v, 8)) {
-+            const auto &st = v.standings[i];
-+            rows.emplace_back(std::format("{}.  {}   {} spot{}   held {}   {} steal{}   {}", i + 1, st.name, st.spots, st.spots == 1 ? "" : "s",
-+                                          held_time(st.hold), st.steals, st.steals == 1 ? "" : "s", points(st.total)),
-+                              colour_of(st));
-+        }
++    const float t = static_cast<float>(v.results_age);
++    draw->AddRectFilled(ImVec2(0, 0), display, faded(IM_COL32_BLACK, 0.45f * ease_out(t / 0.4f)));
++    const float line = 30 * k, w = 900 * k;
++    const auto rows = v.multiplayer ? shown_rows(v, 8) : std::vector<std::size_t>{};
 +    std::vector<std::pair<std::string, std::string>> awards;
-+    if (!v.most_steals.empty()) awards.emplace_back("Most steals", v.most_steals);
-+    if (!v.best_trick.empty()) awards.emplace_back("Best trick", v.best_trick);
-+    if (!v.held_longest.empty()) awards.emplace_back("Held longest", v.held_longest);
++    if (!v.most_steals.empty()) awards.emplace_back("MOST STEALS", v.most_steals);
++    if (!v.best_trick.empty()) awards.emplace_back("BEST TRICK", v.best_trick);
++    if (!v.held_longest.empty()) awards.emplace_back("HELD LONGEST", v.held_longest);
 +    const std::size_t spot_rows = (v.spots.size() + 1) / 2;
-+    const float h = 104 * k + line * rows.size() + (awards.empty() ? 0 : 12 * k + line * awards.size()) + 40 * k + line * spot_rows + 16 * k;
-+    const ImVec2 a(display.x * 0.5f - w * 0.5f, std::max(20 * k, display.y * 0.5f - h * 0.5f)), b(a.x + w, a.y + h);
-+    draw->AddRectFilled(a, b, faded(theme::tile, 0.92f), 10 * k);
-+    draw->AddRect(a, b, v.teams && v.my_team >= 0 ? team_colour(v.my_team) : yours, 10 * k, 0, 2 * k);
-+    centred(draw, title, 40 * k, display.x * 0.5f, a.y + 12 * k, theme::white, v.winner.empty() ? std::string("ROUND OVER") : v.winner);
++    const float h = 150 * k + (rows.empty() ? 0 : 34 * k + line * static_cast<float>(rows.size()) + 4 * k) + (awards.empty() ? 0 : 84 * k) + 44 * k +
++                    24 * k * static_cast<float>(spot_rows) + 20 * k;
++    const float rise = (1 - ease_out(t / 0.45f)) * 70 * k, pa = ease_out(t / 0.35f);
++    const ImVec2 a(display.x * 0.5f - w * 0.5f, std::max(20 * k, display.y * 0.5f - h * 0.5f) + rise), b(a.x + w, a.y + h);
++    const ImU32 own = v.teams && v.my_team >= 0 ? team_colour(v.my_team) : yours;
++    theme::rough_rect(draw, ImVec2(a.x + 8 * k, a.y + 10 * k), ImVec2(b.x + 8 * k, b.y + 10 * k), faded(IM_COL32_BLACK, 0.5f * pa), 7, k);
++    theme::rough_rect(draw, a, b, faded(theme::tile, 0.95f * pa), 3, k);
++    // The header: a band in the winner's colour (gold when it's you), and the winner's line.
++    const bool winner_band = v.you_won || (!v.tie && !rows.empty());
++    const ImU32 band_colour = v.you_won ? theme::bar : winner_band ? colour_of(v.standings[rows.front()]) : theme::tile_light;
++    const float band = ease_out((t - 0.15f) / 0.3f), mid = a.y + 55 * k;
++    const int first = draw->VtxBuffer.Size;
++    slant_bar(draw, a.x - 14 * k, a.x - 14 * k + (w + 28 * k) * band, a.y + 16 * k, 78 * k, 16 * k, faded(band_colour, 0.95f * pa));
++    if (const float s = (t - 0.5f) / 0.6f; s > 0 && s < 1) {
++        const float sx = a.x + (w + 28 * k) * ease_out(s);
++        slant_bar(draw, sx - 60 * k, sx, a.y + 16 * k, 78 * k, 16 * k, faded(theme::white, 0.4f * (1 - s)));
++    }
++    theme::rotate_since(draw, first, -1.2f, ImVec2(display.x * 0.5f, mid));
++    const std::string head = v.winner.empty() ? std::string("ROUND OVER") : v.winner;
++    const float hs = 64 * k * (0.5f + 0.5f * ease_pop((t - 0.3f) / 0.35f)), ha = unit((t - 0.3f) / 0.12f), hw = width(title, hs, head);
++    draw->AddText(title, hs, ImVec2(display.x * 0.5f - hw * 0.5f + 3 * k, mid - hs * 0.55f + 4 * k), faded(IM_COL32_BLACK, 0.35f * ha), head.c_str());
++    draw->AddText(title, hs, ImVec2(display.x * 0.5f - hw * 0.5f, mid - hs * 0.55f), faded(winner_band ? theme::black : theme::white, ha), head.c_str());
++    if (v.you_won) sparks(draw, ImVec2(display.x * 0.5f, mid), k * 1.6f, t - 0.32f, 0.8f, theme::bar, 77, 20);
++    // What you have, the spots and points counting up.
 +    int team_spots = 0;
 +    for (const auto &row : v.standings)
 +        if (v.teams && row.team == v.my_team) team_spots = row.spots;
-+    const auto mine = v.teams && v.my_team >= 0 ? std::format("team {} owns {} of {} spots   you took {}", v.my_team == 0 ? "Red" : "Blue", team_spots,
-+                                                              v.spots.size(), v.taken)
-+                                              : std::format("you own {} of {} spots   {}", v.taken, v.spots.size(), points(v.total));
-+    centred(draw, bold, 22 * k, display.x * 0.5f, a.y + 60 * k, yours, (v.winner.empty() ? "" : std::string("ROUND OVER   ")) + mine);
-+    float y = a.y + 96 * k;
-+    for (const auto &[text, colour] : rows) {
-+        centred(draw, body, 20 * k, display.x * 0.5f, y, colour, text);
-+        y += line;
-+    }
-+    if (!awards.empty()) {
-+        y += 12 * k;
-+        for (const auto &[what, who] : awards) {
-+            const auto label = what + ":  ";
-+            const float lw = width(bold, 20 * k, label), ww = width(body, 20 * k, who);
-+            const float x = display.x * 0.5f - (lw + ww) * 0.5f;
-+            shadowed(draw, bold, 20 * k, ImVec2(x, y), theme::grey_text, label);
-+            shadowed(draw, body, 20 * k, ImVec2(x + lw, y), theme::white, who);
-+            y += line;
++    const float up = ease_out((t - 0.45f) / 0.7f);
++    const int counted = static_cast<int>(std::round(static_cast<float>(v.teams && v.my_team >= 0 ? team_spots : v.taken) * up));
++    const auto mine = v.teams && v.my_team >= 0
++                          ? std::format("TEAM {} OWNS {} OF {} SPOTS    YOU TOOK {}", v.my_team == 0 ? "RED" : "BLUE", counted, v.spots.size(), v.taken)
++                          : std::format("YOU OWN {} OF {} SPOTS    {}", counted, v.spots.size(), points(v.total * up));
++    centred(draw, bold, 24 * k, display.x * 0.5f, a.y + 108 * k, faded(own, unit((t - 0.45f) / 0.2f)), mine);
++    float y = a.y + 150 * k;
++    // The standings: a row each, sliding in from the right one after another; the winner's row
++    // glows, yours is outlined.
++    if (!rows.empty()) {
++        const float c_name = a.x + 76 * k, c_spots = a.x + w * 0.56f, c_held = a.x + w * 0.68f, c_steals = a.x + w * 0.80f, c_points = b.x - 30 * k;
++        const float ta = unit((t - 0.55f) / 0.2f);
++        const auto heading = [&](float x, const char *text, bool right) {
++            draw->AddText(bold, 16 * k, ImVec2(right ? x - width(bold, 16 * k, text) : x, y), faded(theme::grey_text, ta), text);
++        };
++        heading(c_name, "PLAYER", false);
++        heading(c_spots, "SPOTS", true);
++        heading(c_held, "HELD", true);
++        heading(c_steals, "STEALS", true);
++        heading(c_points, "POINTS", true);
++        y += 34 * k;
++        for (std::size_t n = 0; n < rows.size(); ++n, y += line) {
++            const auto &st = v.standings[rows[n]];
++            const float rt = t - 0.65f - 0.1f * static_cast<float>(n), ra = unit(rt / 0.2f);
++            if (ra <= 0) continue;
++            const float dx = (1 - ease_out(rt / 0.35f)) * 80 * k;
++            const auto colour = colour_of(st);
++            const bool top = rows[n] == 0 && !v.tie, me = st.kind == domination::OverlayOwner::you || (v.teams && st.team == v.my_team);
++            const ImVec2 r0(a.x + 18 * k + dx, y - 3 * k), r1(b.x - 18 * k + dx, y + line - 3 * k);
++            if (top) draw->AddRectFilled(r0, r1, faded(colour, (0.18f + 0.1f * std::sin(t * 4.0f)) * ra), 4 * k);
++            if (me) draw->AddRect(r0, r1, faded(own, 0.7f * ra), 4 * k, 0, 2 * k);
++            ImFont *font = me ? bold : body;
++            const float fs = 21 * k;
++            const auto cell = [&](float x, const std::string &text, ImU32 c, bool right) {
++                draw->AddText(font, fs, ImVec2((right ? x - width(font, fs, text) : x) + dx, y), faded(c, ra), text.c_str());
++            };
++            cell(a.x + 30 * k, std::to_string(rows[n] + 1) + ".", theme::grey_text, false);
++            draw->AddCircleFilled(ImVec2(c_name - 16 * k + dx, y + fs * 0.55f), 7 * k, faded(colour, ra), 16);
++            cell(c_name, st.name.substr(0, 22), theme::white, false);
++            cell(c_spots, std::to_string(st.spots), colour, true);
++            cell(c_held, held_time(st.hold), theme::white, true);
++            cell(c_steals, std::to_string(st.steals), theme::white, true);
++            cell(c_points, points(st.total * ease_out((rt - 0.1f) / 0.6f)), colour, true);
 +        }
++        y += 4 * k;
 +    }
-+    y += 12 * k;
-+    shadowed(draw, bold, 18 * k, ImVec2(a.x + 24 * k, y), theme::grey_text, "WHO OWNS WHAT");
++    // The awards: a card each, popping in after the standings.
++    const float after = 0.75f + 0.1f * static_cast<float>(rows.size());
++    if (!awards.empty()) {
++        y += 20 * k;
++        const float gap = 14 * k, cw = (w - 48 * k - gap * static_cast<float>(awards.size() - 1)) / static_cast<float>(awards.size());
++        for (std::size_t n = 0; n < awards.size(); ++n) {
++            const float at = t - after - 0.15f * static_cast<float>(n), s = ease_pop(at / 0.35f), ca = unit(at / 0.15f);
++            if (ca <= 0) continue;
++            const float cxm = a.x + 24 * k + (cw + gap) * static_cast<float>(n) + cw * 0.5f, cym = y + 30 * k;
++            const ImVec2 p0(cxm - cw * 0.5f * s, cym - 30 * k * s), p1(cxm + cw * 0.5f * s, cym + 30 * k * s);
++            theme::rough_rect(draw, p0, p1, faded(theme::tile_light, 0.9f * ca), 11 + static_cast<unsigned>(n), k);
++            draw->AddRectFilled(p0, ImVec2(p0.x + 5 * k, p1.y), faded(theme::bar, ca));
++            centred(draw, bold, 15 * k * s, cxm, cym - 24 * k * s, faded(theme::bar, ca), awards[n].first);
++            centred(draw, body, 19 * k * s, cxm, cym - 2 * k * s, faded(theme::white, ca), awards[n].second);
++        }
++        y += 64 * k;
++    }
++    // Who owns what: each spot's dot and owner, one after another.
++    y += 16 * k;
++    draw->AddText(bold, 17 * k, ImVec2(a.x + 24 * k, y), faded(theme::grey_text, unit((t - after - 0.4f) / 0.3f)), "WHO OWNS WHAT");
 +    y += 28 * k;
 +    const float column = (w - 48 * k) * 0.5f;
 +    for (std::size_t i = 0; i < v.spots.size(); ++i) {
++        const float st = t - after - 0.45f - 0.025f * static_cast<float>(i), ia = unit(st / 0.2f);
++        if (ia <= 0) continue;
 +        const auto &spot = v.spots[i];
-+        const float x = a.x + 24 * k + column * static_cast<float>(i / spot_rows), ry = y + line * static_cast<float>(i % spot_rows);
++        const float x = a.x + 24 * k + column * static_cast<float>(i / spot_rows), ry = y + 24 * k * static_cast<float>(i % spot_rows);
 +        const auto colour = colour_of(spot);
-+        draw->AddCircleFilled(ImVec2(x + 6 * k, ry + 10 * k), 6 * k, colour, 16);
-+        shadowed(draw, body, 17 * k, ImVec2(x + 18 * k, ry), theme::white, spot.name.substr(0, 22));
-+        const auto who = spot.owner == domination::OverlayOwner::none ? std::string("open")
-+                                                                        : std::format("{} {}", spot.owner_name.substr(0, 12), points(spot.top));
-+        shadowed(draw, body, 17 * k, ImVec2(x + column - 12 * k - width(body, 17 * k, who), ry), colour, who);
++        draw->AddCircleFilled(ImVec2(x + 6 * k, ry + 9 * k), 6 * k * (0.6f + 0.4f * ease_pop(st / 0.3f)), faded(colour, ia), 16);
++        draw->AddText(body, 17 * k, ImVec2(x + 18 * k, ry), faded(theme::white, ia), spot.name.substr(0, 22).c_str());
++        const auto who = spot.owner == domination::OverlayOwner::none ? std::string("open") : std::format("{} {}", spot.owner_name.substr(0, 12), points(spot.top));
++        draw->AddText(body, 17 * k, ImVec2(x + column - 12 * k - width(body, 17 * k, who), ry), faded(colour, ia), who.c_str());
 +    }
 +}
 +
@@ -5090,16 +5490,33 @@ index 0000000..0a7dae9
 +            centred(draw, bold, 26 * k, display.x * 0.5f, display.y - 170 * k, spot.ours ? yours : colour_of(spot), text);
 +        }
 +    }
-+    // The feed: what the last tricks and claims did, under the timer.
++    // The feed under the timer: who did what, a small slanted banner each in the player's colour
++    // (yours for your own, the taker's when a spot of yours goes), wiping in and fading out.
++    // Not over the results.
 +    float ty = under;
 +    for (const auto &t : v.toasts) {
++        if (v.results) break;
++        const bool own = t.owner == domination::OverlayOwner::none && t.kind == 1;
 +        const ImU32 colour = t.owner != domination::OverlayOwner::none ? colour_of(t.owner, t.id, t.team, t.colour)
-+                           : t.kind == 1                                ? yours
++                           : t.kind == 1                                ? (v.teams && v.my_team >= 0 ? team_colour(v.my_team) : yours)
 +                           : t.kind == 2                                ? theme::warning
 +                           : t.kind == 3                                ? theme::danger
-+                                                                        : theme::white;
-+        centred(draw, bold, 26 * k, display.x * 0.5f, ty, colour, t.text);
-+        ty += 32 * k;
++                                                                        : theme::tile_light;
++        const bool loud = own || t.kind == 3; // a spot you won or lost
++        const float alpha = fade(t.age, t.left, 0.12f, 0.5f), in = ease_out(t.age / 0.2f);
++        const float size = (loud ? 22.0f : 18.0f) * k * (loud ? 0.9f + 0.1f * ease_pop(t.age / 0.3f) : 1.0f), height = size + 12 * k;
++        const float tw = width(bold, size, t.text), wide = tw + 44 * k, bx = display.x * 0.5f - wide * 0.5f;
++        // Dark text on light bands (yellow, light blue, white), light text on dark ones.
++        const auto cr = (colour >> IM_COL32_R_SHIFT) & 0xff, cg = (colour >> IM_COL32_G_SHIFT) & 0xff, cb = (colour >> IM_COL32_B_SHIFT) & 0xff;
++        const bool light = 0.299f * cr + 0.587f * cg + 0.114f * cb > 150;
++        slant_bar(draw, bx + 4 * k, bx + 4 * k + wide * in, ty + 4 * k, height, 8 * k, faded(IM_COL32_BLACK, 0.4f * alpha));
++        slant_bar(draw, bx, bx + wide * in, ty, height, 8 * k, faded(colour, (loud ? 0.92f : 0.8f) * alpha));
++        if (const float sweep = (t.age - 0.1f) / 0.4f; loud && sweep > 0 && sweep < 1) {
++            const float sx = bx + wide * ease_out(sweep);
++            slant_bar(draw, sx - 24 * k, sx, ty, height, 8 * k, faded(theme::white, 0.4f * (1 - sweep) * alpha));
++        }
++        draw->AddText(bold, size, ImVec2(display.x * 0.5f - tw * 0.5f, ty + 6 * k), faded(light ? theme::black : theme::white, alpha * unit(t.age / 0.15f)), t.text.c_str());
++        ty += (height + 6 * k) * (0.4f + 0.6f * in);
 +    }
 +    // The countdown: 3, 2, 1, then GO, big in the middle.
 +    if (v.running && (v.countdown > 0 || v.go)) {
@@ -6009,6 +6426,201 @@ index 0000000..a92cbcc
 +    std::vector<Event> events_;
 +};
 +} // namespace dingosdk::domination::sync
+diff --git a/Extension/Domination/domination_tools.cpp b/Extension/Domination/domination_tools.cpp
+new file mode 100644
+index 0000000..91a9392
+--- /dev/null
++++ b/Extension/Domination/domination_tools.cpp
+@@ -0,0 +1,189 @@
++#include "domination.h"
++#include "domination_internal.h"
++#include "Engine/Game/Multiplayer/session_tools.h"
++#include "Extension/Multiplayer/Session/session.h"
++#include "Extension/Profile/local_profile_runtime.h"
++#include "Extension/World/level_loading.h"
++#include <algorithm>
++#include <format>
++#include <sstream>
++
++// Park-making: height maps (scan), a teleport facing a heading (tp), and surveys of many places
++// (domination_internal.h, README.md "Making a park").
++namespace dingosdk::domination::detail {
++// ---- scan -------------------------------------------------------------------------------
++void finish_scan(State &s) {
++    auto &scan = *s.scan;
++    const auto seconds = std::chrono::duration<double>(Clock::now() - scan.started).count();
++    const auto directory = data_directory();
++    std::error_code error;
++    std::filesystem::create_directories(directory, error);
++    const auto path = directory / std::filesystem::path("scan-" + stamp() + ".bin");
++    std::ofstream file(path, std::ios::binary | std::ios::trunc);
++    if (file) {
++        file.write("DOMSCAN1", 8);
++        file.write(reinterpret_cast<const char *>(&scan.nx), 4);
++        file.write(reinterpret_cast<const char *>(&scan.nz), 4);
++        for (const float value : {scan.x0, scan.z0, scan.step, scan.top, scan.bottom}) file.write(reinterpret_cast<const char *>(&value), 4);
++        file.write(reinterpret_cast<const char *>(scan.heights.data()), static_cast<std::streamsize>(scan.heights.size() * sizeof(float)));
++    }
++    if (file) {
++        s.last_scan = path.string();
++        say(logging::Level::info, std::format("scan done: {} x {} points, {} without a hit, {:.1f} s. File: {}", scan.nx, scan.nz,
++                                              scan.misses, seconds, s.last_scan));
++    } else {
++        s.last_scan = "error: could not write " + path.string();
++        say(logging::Level::warning, "scan " + s.last_scan);
++    }
++    s.scan.reset();
++}
++void tick_scan(State &s) {
++    if (!s.scan) return;
++    auto &scan = *s.scan;
++    const auto until = Clock::now() + scan_budget;
++    while (scan.next < scan.heights.size() && Clock::now() < until) {
++        const auto i = scan.next % scan.nx, j = scan.next / scan.nx;
++        const float x = scan.x0 + static_cast<float>(i) * scan.step, z = scan.z0 + static_cast<float>(j) * scan.step;
++        const auto hit = local_ground_height(x, z, scan.top, scan.bottom);
++        if (!hit) ++scan.misses;
++        scan.heights[scan.next++] = hit ? *hit : std::numeric_limits<float>::quiet_NaN();
++    }
++    if (scan.next == scan.heights.size()) finish_scan(s);
++}
++
++// ---- survey -------------------------------------------------------------------------------
++bool face(const Vec3 &p, float heading) { return teleport_local_skater_heading({p[0], p[1], p[2]}, heading * 3.14159265f / 180); }
++void tick_survey(State &s, Clock::time_point now) {
++    if (!s.survey || now < s.survey->until || !level_content_active() || !trainer::telemetry().skater) return;
++    auto &v = *s.survey;
++    if (v.next >= v.places.size()) {
++        say(logging::Level::info, std::format("survey done: {} places in {:.0f} s, {} without ground found", v.places.size(),
++                                              std::chrono::duration<double>(now - v.started).count(), v.missed));
++        s.survey.reset();
++        return;
++    }
++    const auto &p = v.places[v.next];
++    if (v.phase == 0) { // a little above the ground expected there; the area loads around the skater
++        face({p[0], p[1] + 1.0f, p[2]}, 0);
++        v.phase = 1;
++        v.until = now + survey_settle;
++        return;
++    }
++    if (v.phase == 1) {
++        const auto ground = local_ground_height(p[0], p[2], p[1] + 40, p[1] - 40);
++        if (!ground) ++v.missed;
++        v.ground = ground ? *ground : p[1];
++        if (v.half > 0 && !s.scan) s.scan = scan_job(p[0] - v.half, p[2] - v.half, p[0] + v.half, p[2] + v.half, v.step, v.ground + 60, v.ground - 60);
++        v.phase = 2;
++        return;
++    }
++    if (v.phase == 2) {
++        if (s.scan) return; // the height map first
++        v.phase = 3;
++    }
++    if (v.phase == 7) {
++        ++v.next;
++        v.phase = 0;
++        return;
++    }
++    const float heading = 90.0f * static_cast<float>(v.phase - 3);
++    face({p[0], v.ground + 0.5f, p[2]}, heading);
++    say(logging::Level::info, std::format("survey {}/{} at ({:.1f}, {:.2f}, {:.1f}) facing {:.0f}", v.next + 1, v.places.size(), p[0], v.ground, p[2], heading));
++    ++v.phase;
++    v.until = now + survey_look;
++}
++
++} // namespace dingosdk::domination::detail
++
++namespace dingosdk::domination {
++using namespace detail;
++std::string scan(const std::vector<std::string> &words) {
++    // x0 z0 x1 z1 [step] [top] [bottom]
++    if (words.size() < 4 || words.size() > 7) return "usage: domination scan <x0> <z0> <x1> <z1> [step 0.25] [top 60] [bottom -40]";
++    std::array<float, 7> v{0, 0, 0, 0, .25f, 60, -40};
++    for (std::size_t n = 0; n < words.size(); ++n) {
++        const auto value = number(words[n]);
++        if (!value) return "error: not a number: " + words[n];
++        v[n] = *value;
++    }
++    const float x0 = std::min(v[0], v[2]), x1 = std::max(v[0], v[2]), z0 = std::min(v[1], v[3]), z1 = std::max(v[1], v[3]);
++    const float step = v[4], top = v[5], bottom = v[6];
++    if (!(step >= .02f && step <= 10) || !(top > bottom)) return "error: step must be 0.02 to 10 and top above bottom.";
++    // (Counted in doubles first: far-off coordinates would overflow an integer.)
++    const double cx = std::floor((static_cast<double>(x1) - x0) / step) + 1, cz = std::floor((static_cast<double>(z1) - z0) / step) + 1;
++    if (cx * cz > static_cast<double>(scan_limit)) return std::format("error: {:.0f} points; at most {}.", cx * cz, scan_limit);
++    const auto nx = static_cast<std::uint64_t>(cx), nz = static_cast<std::uint64_t>(cz);
++    auto &s = state();
++    std::lock_guard lock(s.mutex);
++    if (s.scan) return "error: a scan is running.";
++    s.scan = scan_job(x0, z0, x1, z1, step, top, bottom);
++    const auto reply = std::format("Scanning {} x {} points ({:.1f} to {:.1f}, {:.1f} to {:.1f}, step {:g}).", nx, nz, x0, x1, z0, z1, step);
++    say(logging::Level::info, reply);
++    return reply;
++}
++
++std::string teleport(const std::vector<std::string> &words) {
++    if (words.size() < 3 || words.size() > 4) return "usage: domination tp <x> <y|ground> <z> [heading]";
++    std::array<float, 4> v{};
++    for (std::size_t n = 0; n < words.size(); ++n) {
++        if (n == 1 && lower(words[n]) == "ground") { // standing on whatever is below (found once there)
++            v[n] = std::numeric_limits<float>::quiet_NaN();
++            continue;
++        }
++        const auto value = number(words[n]);
++        if (!value) return "error: not a number: " + words[n];
++        v[n] = *value;
++    }
++    auto &s = state();
++    std::lock_guard lock(s.mutex);
++    if (multiplayer_session_active() && !session_noclip_allowed()) return "error: the host has turned off teleporting.";
++    s.teleport = std::pair<Vec3, float>{{v[0], v[1], v[2]}, v[3]};
++    const auto y = std::isnan(v[1]) ? std::string("the ground") : std::format("{:g}", v[1]);
++    return std::format("Teleporting to ({:g}, {}, {:g}) facing {:g} (degrees from +z towards +x).", v[0], y, v[2], v[3]);
++}
++
++std::string survey(const std::vector<std::string> &words) {
++    auto &s = state();
++    if (words.size() == 1 && words[0] == "stop") {
++        std::lock_guard lock(s.mutex);
++        if (!s.survey) return "No survey is running.";
++        const auto done = s.survey->next;
++        s.survey.reset();
++        return std::format("Survey stopped after {} places.", done);
++    }
++    if (words.empty() || words.size() > 3) return "usage: domination survey <places file> [half size 60] [step 0.5] | stop";
++    float half = 60, step = 0.5f;
++    for (std::size_t n = 1; n < words.size(); ++n) {
++        const auto value = number(words[n]);
++        if (!value) return "error: not a number: " + words[n];
++        (n == 1 ? half : step) = *value;
++    }
++    if (half < 0 || half > 500 || !(step >= .1f && step <= 10)) return "error: half size 0 to 500, step 0.1 to 10.";
++    const double side = std::floor(2.0 * half / step) + 1;
++    if (side * side > static_cast<double>(scan_limit)) return std::format("error: {:.0f} points per place; at most {} (a bigger step, or a smaller square).", side * side, scan_limit);
++    // One place per line: x y z (y: the ground expected there); # starts a comment.
++    std::ifstream file{std::filesystem::path(words[0])};
++    if (!file) return "error: could not read " + words[0];
++    Survey v;
++    std::string line;
++    while (std::getline(file, line) && v.places.size() < 10000) {
++        if (line.empty() || line[0] == '#') continue;
++        std::array<float, 3> p{};
++        std::istringstream in(line);
++        if (in >> p[0] >> p[1] >> p[2]) v.places.push_back(p);
++    }
++    if (v.places.empty()) return "error: no places in " + words[0] + " (one \"x y z\" per line).";
++    v.half = half;
++    v.step = step;
++    v.started = Clock::now();
++    std::lock_guard lock(s.mutex);
++    if (multiplayer_session_active() && !session_noclip_allowed()) return "error: the host has turned off teleporting.";
++    if (s.survey) return "error: a survey is running (domination survey stop).";
++    const auto count = v.places.size();
++    s.survey = std::move(v);
++    const auto reply = std::format("Surveying {} places: about {:.0f} minutes.", count, count * 9.5 / 60);
++    say(logging::Level::info, reply);
++    return reply;
++}
++
++} // namespace dingosdk::domination
 diff --git a/Extension/Domination/domination_wire.cpp b/Extension/Domination/domination_wire.cpp
 new file mode 100644
 index 0000000..b65255f
@@ -6213,6 +6825,889 @@ index 0000000..2d67dc1
 +// Empty for anything malformed, of another version, or not Domination's.
 +std::optional<Message> decode(std::span<const std::uint8_t> bytes) noexcept;
 +}
+diff --git a/Extension/Domination/parks/s3i-banks.json b/Extension/Domination/parks/s3i-banks.json
+new file mode 100644
+index 0000000..1c3471f
+--- /dev/null
++++ b/Extension/Domination/parks/s3i-banks.json
+@@ -0,0 +1,24 @@
++{
++ "schema": 1,
++ "level": "levels/game/dingolevel_reskate_skate3improved/dingolevel_reskate_skate3improved",
++ "park": "Sunken banks",
++ "map": "Skate 3 Improved",
++ "package": "333-Skate_3_Improved",
++ "outline": [[400, -1580], [560, -1580], [560, -1410], [400, -1410]],
++ "spots": [
++  {"id": "center", "name": "Statue dish", "kind": "bowl", "shape": "capsule", "a": [470.0, -1507.0], "b": [470.1, -1506.9], "radius": 21.0, "y": [113.5, 135.52], "marker": [470.04, 133.02, -1506.96]},
++  {"id": "bank-south", "name": "South slope", "kind": "bank", "shape": "polygon", "points": [[440.3, -1477.3], [446.67, -1472.08], [453.93, -1468.2], [461.81, -1465.81], [470.0, -1465.0], [478.19, -1465.81], [486.07, -1468.2], [493.33, -1472.08], [499.7, -1477.3], [485.2, -1491.8], [481.94, -1489.12], [478.23, -1487.14], [474.19, -1485.91], [470.0, -1485.5], [465.81, -1485.91], [461.77, -1487.14], [458.06, -1489.12], [454.8, -1491.8]], "y": [113.56, 124.67], "marker": [470.08, 122.17, -1477.54]},
++  {"id": "bank-east", "name": "East slope", "kind": "bank", "shape": "polygon", "points": [[503.23, -1473.77], [508.02, -1479.37], [511.88, -1485.66], [514.7, -1492.48], [516.42, -1499.65], [517.0, -1507.0], [516.42, -1514.35], [514.7, -1521.52], [511.88, -1528.34], [508.02, -1534.63], [503.23, -1540.23], [485.2, -1522.2], [487.39, -1519.64], [489.16, -1516.76], [490.45, -1513.64], [491.24, -1510.36], [491.5, -1507.0], [491.24, -1503.64], [490.45, -1500.36], [489.16, -1497.24], [487.39, -1494.36], [485.2, -1491.8]], "y": [113.56, 124.62], "marker": [502.22, 122.12, -1507.07]},
++  {"id": "bank-north", "name": "North slope", "kind": "bank", "shape": "polygon", "points": [[503.23, -1540.23], [497.63, -1545.02], [491.34, -1548.88], [484.52, -1551.7], [477.35, -1553.42], [470.0, -1554.0], [462.65, -1553.42], [455.48, -1551.7], [448.66, -1548.88], [442.37, -1545.02], [436.77, -1540.23], [454.8, -1522.2], [457.36, -1524.39], [460.24, -1526.16], [463.36, -1527.45], [466.64, -1528.24], [470.0, -1528.5], [473.36, -1528.24], [476.64, -1527.45], [479.76, -1526.16], [482.64, -1524.39], [485.2, -1522.2]], "y": [113.56, 131.47], "marker": [470.07, 128.97, -1539.22]},
++  {"id": "bank-west", "name": "West slope", "kind": "bank", "shape": "polygon", "points": [[436.77, -1540.23], [431.98, -1534.63], [428.12, -1528.34], [425.3, -1521.52], [423.58, -1514.35], [423.0, -1507.0], [423.58, -1499.65], [425.3, -1492.48], [428.12, -1485.66], [431.98, -1479.37], [436.77, -1473.77], [454.8, -1491.8], [452.61, -1494.36], [450.84, -1497.24], [449.55, -1500.36], [448.76, -1503.64], [448.5, -1507.0], [448.76, -1510.36], [449.55, -1513.64], [450.84, -1516.76], [452.61, -1519.64], [454.8, -1522.2]], "y": [113.56, 131.32], "marker": [437.83, 128.82, -1507.08]},
++  {"id": "east-stairs", "name": "East stairs", "kind": "stairs", "shape": "polygon", "points": [[533.0, -1543.0], [560.0, -1543.0], [560.0, -1503.0], [533.0, -1503.0]], "y": [113.56, 128.57], "marker": [546.37, 126.07, -1523.12]}
++ ],
++ "starts": [
++  {"position": [420, 129.43, -1507], "heading": 90},
++  {"position": [435, 131.51, -1542], "heading": 45},
++  {"position": [470, 132.19, -1557], "heading": 0},
++  {"position": [505, 116.17, -1542], "heading": -45},
++  {"position": [452, 114.74, -1458], "heading": 160},
++  {"position": [520, 114.61, -1507], "heading": -90}
++ ]
++}
+diff --git a/Extension/Domination/parks/s3i-hillpark.json b/Extension/Domination/parks/s3i-hillpark.json
+new file mode 100644
+index 0000000..01f5530
+--- /dev/null
++++ b/Extension/Domination/parks/s3i-hillpark.json
+@@ -0,0 +1,28 @@
++{
++ "schema": 1,
++ "level": "levels/game/dingolevel_reskate_skate3improved/dingolevel_reskate_skate3improved",
++ "park": "Hillside park",
++ "map": "Skate 3 Improved",
++ "package": "333-Skate_3_Improved",
++ "outline": [[1350, 298], [1510, 298], [1510, 470], [1350, 470]],
++ "spots": [
++  {"id": "deep-bowl", "name": "Deep bowl", "kind": "bowl", "shape": "polygon", "points": [[1448.0, 355.0], [1495.0, 355.0], [1498.0, 410.0], [1490.0, 432.0], [1455.0, 432.0], [1441.0, 415.0], [1447.0, 390.0], [1450.0, 370.0]], "y": [32.8, 45.14], "marker": [1471.35, 42.64, 393.52]},
++  {"id": "north-pool", "name": "North pool", "kind": "bowl", "shape": "polygon", "points": [[1463.0, 302.0], [1500.0, 302.0], [1500.0, 345.0], [1475.0, 346.0], [1466.0, 336.0]], "y": [32.8, 41.88], "marker": [1482.66, 39.38, 322.83]},
++  {"id": "pyramid", "name": "Pyramid", "kind": "box", "shape": "polygon", "points": [[1400.0, 312.0], [1418.0, 316.0], [1408.0, 343.0], [1395.0, 338.0]], "y": [35.15, 44.54], "marker": [1405.54, 42.04, 326.67]},
++  {"id": "dish", "name": "Round dish", "kind": "bowl", "shape": "capsule", "a": [1415.5, 357.0], "b": [1415.6, 357.1], "radius": 6.0, "y": [36.57, 43.78], "marker": [1415.5, 41.28, 357.0]},
++  {"id": "curved-ledges", "name": "Curved ledges", "kind": "ledge", "shape": "polygon", "points": [[1388.0, 362.0], [1400.0, 362.0], [1415.0, 378.0], [1418.0, 393.0], [1404.0, 394.0], [1393.0, 380.0]], "y": [35.16, 44.53], "marker": [1403.15, 42.03, 378.19]},
++  {"id": "quarter-arc", "name": "Quarter arc", "kind": "transition", "shape": "polygon", "points": [[1370.0, 350.0], [1388.0, 350.0], [1388.0, 416.0], [1374.0, 413.0], [1368.0, 380.0]], "y": [36.56, 44.53], "marker": [1378.96, 42.03, 380.83]},
++  {"id": "hips", "name": "Twin hips", "kind": "transition", "shape": "polygon", "points": [[1404.0, 402.0], [1421.0, 402.0], [1421.0, 447.0], [1404.0, 447.0]], "y": [36.57, 44.99], "marker": [1412.37, 42.49, 424.38]},
++  {"id": "bank-wall", "name": "Bank wall", "kind": "bank", "shape": "polygon", "points": [[1424.0, 372.0], [1438.0, 362.0], [1446.0, 367.0], [1444.0, 388.0], [1428.0, 392.0]], "y": [32.8, 43.02], "marker": [1435.54, 40.52, 377.24]},
++  {"id": "hubba-steps", "name": "North ledge", "kind": "ledge", "shape": "polygon", "points": [[1393.0, 300.0], [1458.0, 300.0], [1458.0, 307.0], [1393.0, 307.0]], "y": [35.14, 42.76], "marker": [1425.37, 40.26, 303.38]}
++ ],
++ "starts": [
++  {"position": [1380, 42.13, 430], "heading": 135},
++  {"position": [1430, 37.62, 435], "heading": 180},
++  {"position": [1460, 38.67, 440], "heading": -153},
++  {"position": [1440, 37.62, 350], "heading": -18},
++  {"position": [1395, 36.48, 330], "heading": 35},
++  {"position": [1500, 37.97, 425], "heading": -123},
++  {"position": [1360, 37.63, 380], "heading": 90}
++ ]
++}
+diff --git a/Extension/Domination/parks/s3i-industrial.json b/Extension/Domination/parks/s3i-industrial.json
+new file mode 100644
+index 0000000..600afba
+--- /dev/null
++++ b/Extension/Domination/parks/s3i-industrial.json
+@@ -0,0 +1,25 @@
++{
++ "schema": 1,
++ "level": "levels/game/dingolevel_reskate_skate3improved/dingolevel_reskate_skate3improved",
++ "park": "Industrial bowls",
++ "map": "Skate 3 Improved",
++ "package": "333-Skate_3_Improved",
++ "outline": [[680, 1125], [840, 1125], [840, 1290], [680, 1290]],
++ "spots": [
++  {"id": "west-pocket", "name": "West pocket", "kind": "bowl", "shape": "polygon", "points": [[688.0, 1176.0], [700.0, 1170.0], [715.0, 1176.0], [716.0, 1196.0], [700.0, 1200.0], [688.0, 1194.0]], "y": [0.05, 10.66], "marker": [701.76, 8.16, 1185.36]},
++  {"id": "pyramid", "name": "Pyramid hump", "kind": "mound", "shape": "polygon", "points": [[726.0, 1166.0], [741.5, 1166.0], [741.0, 1180.0], [728.0, 1178.0]], "y": [0.04, 10.66], "marker": [734.3, 8.16, 1172.25]},
++  {"id": "ne-pocket", "name": "North pocket", "kind": "bowl", "shape": "polygon", "points": [[744.0, 1150.0], [761.0, 1152.0], [763.0, 1172.0], [752.0, 1180.0], [745.0, 1168.0]], "y": [0.04, 10.66], "marker": [753.38, 8.16, 1163.45]},
++  {"id": "junction", "name": "Junction", "kind": "bowl", "shape": "polygon", "points": [[718.0, 1181.0], [742.0, 1182.0], [752.0, 1192.0], [745.0, 1212.0], [728.0, 1214.0], [718.0, 1199.0]], "y": [0.01, 10.66], "marker": [733.78, 8.16, 1196.41]},
++  {"id": "spine-arm", "name": "Spine arm", "kind": "bowl", "shape": "polygon", "points": [[745.0, 1212.0], [760.0, 1199.0], [790.0, 1219.0], [782.0, 1230.0], [766.0, 1240.0], [748.0, 1228.0]], "y": [0.05, 10.67], "marker": [765.28, 8.17, 1219.88]},
++  {"id": "big-pipe", "name": "Big pipe", "kind": "rail", "shape": "capsule", "a": [683.0, 1248.0], "b": [721.0, 1211.5], "radius": 2.5, "y": [3.71, 38.23], "marker": [702.01, 35.73, 1229.74]},
++  {"id": "rim-rail", "name": "North rim", "kind": "rail", "shape": "capsule", "a": [727.0, 1142.0], "b": [766.0, 1150.0], "radius": 2.0, "y": [4.66, 17.78], "marker": [746.48, 15.28, 1146.0]}
++ ],
++ "starts": [
++  {"position": [705, 5.71, 1215], "heading": 104},
++  {"position": [722, 1.09, 1160], "heading": 27},
++  {"position": [770, 12.83, 1190], "heading": -59},
++  {"position": [757, 14.17, 1248], "heading": -164},
++  {"position": [735, 16.27, 1235], "heading": 162},
++  {"position": [780, 15.04, 1180], "heading": -54}
++ ]
++}
+diff --git a/Extension/Domination/parks/s3i-loans.json b/Extension/Domination/parks/s3i-loans.json
+new file mode 100644
+index 0000000..8f2abd8
+--- /dev/null
++++ b/Extension/Domination/parks/s3i-loans.json
+@@ -0,0 +1,24 @@
++{
++ "schema": 1,
++ "level": "levels/game/dingolevel_reskate_skate3improved/dingolevel_reskate_skate3improved",
++ "park": "Loans plaza",
++ "map": "Skate 3 Improved",
++ "package": "333-Skate_3_Improved",
++ "outline": [[1045, -1162], [1162, -1162], [1162, -1060], [1045, -1060]],
++ "spots": [
++  {"id": "zigzags-west", "name": "West fountain ledges", "kind": "ledge", "shape": "polygon", "points": [[1050.5, -1122.0], [1092.0, -1122.0], [1092.0, -1098.0], [1050.5, -1098.0]], "y": [128.91, 135.24], "marker": [1071.12, 132.74, -1110.12]},
++  {"id": "zigzags-east", "name": "East fountain ledges", "kind": "ledge", "shape": "polygon", "points": [[1092.0, -1122.0], [1136.0, -1122.0], [1136.0, -1098.0], [1092.0, -1098.0]], "y": [128.9, 135.25], "marker": [1113.87, 132.75, -1110.12]},
++  {"id": "rail-bank", "name": "Rail bank", "kind": "bank", "shape": "polygon", "points": [[1050.5, -1146.0], [1105.0, -1146.0], [1105.0, -1128.0], [1050.5, -1128.0]], "y": [129.18, 138.33], "marker": [1077.62, 135.83, -1137.12]},
++  {"id": "north-bank", "name": "North bank", "kind": "bank", "shape": "polygon", "points": [[1105.0, -1146.0], [1156.0, -1146.0], [1156.0, -1128.0], [1105.0, -1128.0]], "y": [129.33, 138.33], "marker": [1130.37, 135.83, -1137.12]},
++  {"id": "south-steps", "name": "South steps", "kind": "stairs", "shape": "polygon", "points": [[1072.0, -1092.0], [1156.0, -1092.0], [1156.0, -1066.0], [1072.0, -1066.0]], "y": [129.17, 140.23], "marker": [1113.87, 137.73, -1079.12]},
++  {"id": "benches", "name": "Back wall", "kind": "ledge", "shape": "capsule", "a": [1086.0, -1153.5], "b": [1140.0, -1153.5], "radius": 2.2, "y": [131.17, 139.43], "marker": [1112.99, 136.93, -1153.38]}
++ ],
++ "starts": [
++  {"position": [1070, 130.33, -1125], "heading": 63},
++  {"position": [1110, 130.33, -1125], "heading": -34},
++  {"position": [1065, 130.22, -1095], "heading": 113},
++  {"position": [1145, 130.82, -1110], "heading": -90},
++  {"position": [1145, 130.98, -1125], "heading": -72},
++  {"position": [1100, 130.22, -1095], "heading": 180}
++ ]
++}
+diff --git a/Extension/Domination/parks/sanvan-bridge.json b/Extension/Domination/parks/sanvan-bridge.json
+new file mode 100644
+index 0000000..b79fac1
+--- /dev/null
++++ b/Extension/Domination/parks/sanvan-bridge.json
+@@ -0,0 +1,25 @@
++{
++ "schema": 1,
++ "level": "levels/game/bam_levelroot/bam_levelroot",
++ "park": "Bonski Park",
++ "map": "San Vansterdam",
++ "outline": [[400, 1052], [492, 1052], [492, 1178], [400, 1178]],
++ "spots": [
++  {"id": "north-bowl", "name": "North bowl", "kind": "bowl", "shape": "polygon", "points": [[412.5, 1060.0], [447.5, 1060.0], [447.5, 1087.5], [412.5, 1087.5]], "y": [194.48, 209.46], "marker": [429.87, 206.96, 1073.63]},
++  {"id": "hump-bowl", "name": "Hump bowl", "kind": "bowl", "shape": "polygon", "points": [[409.5, 1088.5], [458.0, 1088.5], [458.0, 1109.5], [409.5, 1109.5]], "y": [196.02, 205.88], "marker": [433.62, 203.38, 1098.88]},
++  {"id": "wall-bank", "name": "Wall bank", "kind": "bank", "shape": "polygon", "points": [[465.5, 1083.0], [474.5, 1083.0], [474.5, 1105.0], [465.5, 1105.0]], "y": [198.81, 209.5], "marker": [469.87, 208.16, 1093.88]},
++  {"id": "coping-ledges", "name": "Coping ledges", "kind": "ledge", "shape": "polygon", "points": [[409.5, 1109.5], [450.0, 1109.5], [450.0, 1115.5], [409.5, 1115.5]], "y": [196.1, 209.5], "marker": [429.62, 207.94, 1112.38]},
++  {"id": "volcano", "name": "Volcano", "kind": "mound", "shape": "capsule", "a": [462.4, 1118.0], "b": [462.5, 1118.1], "radius": 4.6, "y": [198.82, 206.31], "marker": [462.43, 203.81, 1118.06]},
++  {"id": "west-run", "name": "West run", "kind": "transition", "shape": "polygon", "points": [[409.5, 1115.5], [430.0, 1115.5], [430.0, 1167.0], [409.5, 1167.0]], "y": [198.81, 209.5], "marker": [419.62, 207.84, 1141.13]},
++  {"id": "kidney", "name": "Kidney bowl", "kind": "bowl", "shape": "polygon", "points": [[430.0, 1123.0], [457.0, 1123.0], [463.0, 1128.0], [463.0, 1163.0], [430.0, 1163.0]], "y": [198.81, 209.07], "marker": [446.21, 206.57, 1143.09]},
++  {"id": "east-bank", "name": "East bank", "kind": "bank", "shape": "polygon", "points": [[472.5, 1105.5], [477.0, 1105.5], [483.0, 1122.0], [483.0, 1133.0], [475.0, 1133.0], [468.0, 1124.0]], "y": [198.81, 209.5], "marker": [475.94, 208.18, 1120.47]}
++ ],
++ "starts": [
++  {"position": [455, 199.86, 1080], "heading": -25},
++  {"position": [470, 199.96, 1070], "heading": -36},
++  {"position": [461, 199.87, 1095], "heading": -51},
++  {"position": [445, 199.87, 1119], "heading": -144},
++  {"position": [430, 199.9, 1056], "heading": 10},
++  {"position": [455, 199.87, 1060], "heading": -16}
++ ]
++}
+diff --git a/Extension/Domination/parks/sanvan-elone.json b/Extension/Domination/parks/sanvan-elone.json
+new file mode 100644
+index 0000000..ba9c9f4
+--- /dev/null
++++ b/Extension/Domination/parks/sanvan-elone.json
+@@ -0,0 +1,23 @@
++{
++ "schema": 1,
++ "level": "levels/game/bam_levelroot/bam_levelroot",
++ "park": "El-One Courts",
++ "map": "San Vansterdam",
++ "outline": [[40, 1140], [165, 1140], [165, 1245], [40, 1245]],
++ "spots": [
++  {"id": "curved-ledge", "name": "Curved ledge", "kind": "ledge", "shape": "polygon", "points": [[91.0, 1175.0], [100.0, 1171.5], [110.0, 1177.5], [117.5, 1188.0], [117.5, 1200.5], [111.5, 1202.0], [108.0, 1190.0], [100.0, 1182.0], [92.0, 1180.5]], "y": [199.91, 207.43], "marker": [106.74, 204.93, 1184.61]},
++  {"id": "stair-blocks", "name": "Stair blocks", "kind": "stairs", "shape": "polygon", "points": [[66.0, 1199.0], [80.0, 1192.0], [91.0, 1203.0], [90.0, 1212.0], [77.0, 1219.0], [67.0, 1214.0]], "y": [200.72, 208.2], "marker": [78.01, 205.7, 1205.82]},
++  {"id": "west-stairs", "name": "West stairs", "kind": "stairs", "shape": "polygon", "points": [[49.5, 1196.0], [60.5, 1196.0], [60.5, 1210.0], [49.5, 1210.0]], "y": [195.3, 208.76], "marker": [54.87, 206.26, 1202.88]},
++  {"id": "diagonal-stairs", "name": "Diagonal stairs", "kind": "stairs", "shape": "polygon", "points": [[122.0, 1158.0], [130.0, 1151.0], [147.5, 1180.0], [140.0, 1190.0], [132.0, 1178.0]], "y": [197.12, 206.01], "marker": [134.78, 203.51, 1170.35]},
++  {"id": "long-bank", "name": "Long bank", "kind": "bank", "shape": "polygon", "points": [[99.0, 1215.0], [136.0, 1188.0], [139.5, 1192.5], [101.5, 1219.5]], "y": [199.91, 206.87], "marker": [119.32, 204.37, 1203.53]}
++ ],
++ "starts": [
++  {"position": [80, 201.77, 1185], "heading": 45},
++  {"position": [75, 202.97, 1232], "heading": 148},
++  {"position": [85, 201.77, 1225], "heading": 158},
++  {"position": [100, 201.77, 1209], "heading": -151},
++  {"position": [112, 200.96, 1165], "heading": -26},
++  {"position": [70, 220.59, 1180], "heading": 51},
++  {"position": [122, 200.96, 1192], "heading": -73}
++ ]
++}
+diff --git a/Extension/Domination/parks/sanvan-flowtopia.json b/Extension/Domination/parks/sanvan-flowtopia.json
+new file mode 100644
+index 0000000..ae8e386
+--- /dev/null
++++ b/Extension/Domination/parks/sanvan-flowtopia.json
+@@ -0,0 +1,29 @@
++{
++ "schema": 1,
++ "level": "levels/game/bam_levelroot/bam_levelroot",
++ "park": "FlowTopia",
++ "map": "San Vansterdam",
++ "outline": [[620, 1280], [712, 1280], [712, 1424], [686, 1424], [686, 1440], [648, 1440], [648, 1470], [620, 1470]],
++ "spots": [
++  {"id": "wedges", "name": "Wedges", "kind": "bank", "shape": "polygon", "points": [[672.0, 1356.0], [685.0, 1351.0], [701.5, 1356.0], [701.5, 1375.0], [700.0, 1392.0], [686.0, 1393.0], [676.0, 1386.0], [668.0, 1380.0], [670.0, 1368.0]], "y": [228.61, 246.18], "marker": [686.31, 243.68, 1371.93]},
++  {"id": "diamond-bank", "name": "Diamond bank", "kind": "bank", "shape": "polygon", "points": [[639.0, 1316.0], [652.5, 1360.0], [636.0, 1397.0], [629.0, 1352.0]], "y": [228.61, 239.48], "marker": [639.65, 236.98, 1356.7]},
++  {"id": "ribbed-fan", "name": "Ribbed fan", "kind": "bank", "shape": "polygon", "points": [[656.0, 1281.0], [675.0, 1281.0], [668.0, 1331.0], [662.0, 1327.0], [657.0, 1300.0]], "y": [228.61, 238.48], "marker": [665.05, 235.98, 1300.88]},
++  {"id": "kinked-ledges", "name": "Kinked ledges", "kind": "ledge", "shape": "polygon", "points": [[645.0, 1314.0], [652.0, 1312.0], [667.0, 1340.0], [665.0, 1352.0], [657.0, 1352.0]], "y": [228.61, 235.51], "marker": [656.63, 233.01, 1333.18]},
++  {"id": "cross", "name": "The cross", "kind": "mound", "shape": "capsule", "a": [655.6, 1395.3], "b": [655.7, 1395.4], "radius": 7.0, "y": [228.63, 237.16], "marker": [655.69, 234.66, 1395.37]},
++  {"id": "pads-west", "name": "West pads", "kind": "ledge", "shape": "polygon", "points": [[641.0, 1406.0], [658.0, 1406.0], [657.0, 1419.0], [641.0, 1419.0]], "y": [228.61, 235.98], "marker": [649.19, 233.48, 1412.31]},
++  {"id": "pads-east", "name": "East pads", "kind": "ledge", "shape": "polygon", "points": [[667.0, 1406.0], [689.0, 1407.0], [688.0, 1420.0], [667.0, 1420.0]], "y": [228.61, 235.08], "marker": [677.55, 232.58, 1413.13]},
++  {"id": "long-rail", "name": "Long rail", "kind": "rail", "shape": "capsule", "a": [632.7, 1425.0], "b": [632.7, 1452.0], "radius": 2.5, "y": [228.61, 237.69], "marker": [632.85, 235.19, 1438.43]},
++  {"id": "quarter-arc", "name": "Quarter arc", "kind": "transition", "shape": "polygon", "points": [[622.0, 1290.0], [634.0, 1290.0], [634.0, 1310.0], [622.0, 1310.0]], "y": [228.61, 236.05], "marker": [627.87, 233.55, 1299.88]}
++ ],
++ "starts": [
++  {"position": [626, 229.66, 1335], "heading": 99},
++  {"position": [626, 229.66, 1400], "heading": 128},
++  {"position": [648, 229.66, 1300], "heading": 13},
++  {"position": [648, 229.66, 1338], "heading": 28},
++  {"position": [645, 231.69, 1432], "heading": 162},
++  {"position": [660, 229.66, 1422], "heading": 180},
++  {"position": [690, 229.66, 1428], "heading": -158},
++  {"position": [700, 231.18, 1400], "heading": -131},
++  {"position": [662, 229.66, 1405], "heading": 175}
++ ]
++}
+diff --git a/Extension/Domination/parks/sanvan-mcorp.json b/Extension/Domination/parks/sanvan-mcorp.json
+new file mode 100644
+index 0000000..4dca749
+--- /dev/null
++++ b/Extension/Domination/parks/sanvan-mcorp.json
+@@ -0,0 +1,32 @@
++{
++ "schema": 1,
++ "level": "levels/game/bam_levelroot/bam_levelroot",
++ "park": "Hartcore Plaza",
++ "map": "San Vansterdam",
++ "outline": [[360, 1258], [550, 1258], [550, 1425], [360, 1425]],
++ "spots": [
++  {"id": "rings", "name": "Twin rings", "kind": "bowl", "shape": "capsule", "a": [380.0, 1300.0], "b": [392.0, 1312.0], "radius": 6.5, "y": [219.02, 227.12], "marker": [385.99, 224.62, 1305.99]},
++  {"id": "zigzag", "name": "Zigzag ledges", "kind": "ledge", "shape": "polygon", "points": [[463.0, 1324.0], [478.0, 1322.0], [493.0, 1338.0], [492.0, 1362.0], [482.0, 1366.0], [466.0, 1360.0], [460.0, 1345.0]], "y": [207.14, 218.75], "marker": [476.71, 216.25, 1344.1]},
++  {"id": "pyramid-north", "name": "North pyramid", "kind": "box", "shape": "polygon", "points": [[465.0, 1287.0], [481.0, 1287.0], [481.0, 1304.0], [465.0, 1304.0]], "y": [209.13, 216.82], "marker": [472.87, 214.32, 1295.38]},
++  {"id": "banks", "name": "Hubba banks", "kind": "bank", "shape": "polygon", "points": [[431.0, 1366.0], [474.0, 1373.0], [474.0, 1384.0], [431.0, 1383.0]], "y": [209.13, 218.61], "marker": [450.85, 216.11, 1376.35]},
++  {"id": "stair-box", "name": "Stair box", "kind": "box", "shape": "polygon", "points": [[476.0, 1370.0], [490.0, 1370.0], [490.0, 1386.0], [476.0, 1386.0]], "y": [209.13, 223.98], "marker": [482.87, 221.48, 1377.88]},
++  {"id": "stairs", "name": "East stairs", "kind": "stairs", "shape": "polygon", "points": [[505.0, 1350.0], [523.0, 1350.0], [523.0, 1376.0], [505.0, 1376.0]], "y": [210.62, 218.57], "marker": [513.87, 216.07, 1362.88]},
++  {"id": "kicker", "name": "Kicker block", "kind": "box", "shape": "polygon", "points": [[373.0, 1391.0], [417.0, 1391.0], [417.0, 1407.5], [373.0, 1407.5]], "y": [210.64, 218.51], "marker": [394.87, 216.01, 1399.13]},
++  {"id": "pyramid-south", "name": "South pyramid", "kind": "box", "shape": "polygon", "points": [[428.0, 1391.0], [441.0, 1391.0], [441.0, 1406.0], [428.0, 1406.0]], "y": [210.64, 218.07], "marker": [434.37, 215.57, 1398.38]},
++  {"id": "fountain", "name": "Fountain dish", "kind": "bowl", "shape": "capsule", "a": [419.5, 1416.0], "b": [419.6, 1416.1], "radius": 8.0, "y": [210.71, 223.82], "marker": [419.52, 221.32, 1416.03]},
++  {"id": "round-bowl", "name": "Round bowl", "kind": "bowl", "shape": "polygon", "points": [[442.0, 1394.0], [498.0, 1394.0], [498.0, 1424.0], [442.0, 1424.0]], "y": [210.85, 220.35], "marker": [469.87, 217.85, 1408.88]},
++  {"id": "mini-bowl", "name": "Mini bowl", "kind": "bowl", "shape": "capsule", "a": [508.5, 1397.5], "b": [508.6, 1397.6], "radius": 5.5, "y": [212.12, 219.09], "marker": [508.52, 216.59, 1397.53]},
++  {"id": "pyramid-east", "name": "East pyramid", "kind": "box", "shape": "polygon", "points": [[518.0, 1391.0], [533.0, 1391.0], [533.0, 1407.0], [518.0, 1407.0]], "y": [212.1, 219.89], "marker": [525.37, 217.39, 1398.88]}
++ ],
++ "starts": [
++  {"position": [440, 208.19, 1358], "heading": 79},
++  {"position": [500, 211.68, 1310], "heading": -45},
++  {"position": [455, 213.11, 1388], "heading": -170},
++  {"position": [400, 211.69, 1370], "heading": 101},
++  {"position": [520, 220.57, 1330], "heading": -67},
++  {"position": [485, 210.18, 1312], "heading": -36},
++  {"position": [395, 212.17, 1385], "heading": 114},
++  {"position": [540, 213.17, 1380], "heading": -103},
++  {"position": [372, 209.84, 1350], "heading": 83}
++ ]
++}
+diff --git a/Extension/Domination/parks/sanvan-seaside.json b/Extension/Domination/parks/sanvan-seaside.json
+new file mode 100644
+index 0000000..9233c4e
+--- /dev/null
++++ b/Extension/Domination/parks/sanvan-seaside.json
+@@ -0,0 +1,33 @@
++{
++ "schema": 1,
++ "level": "levels/game/bam_levelroot/bam_levelroot",
++ "park": "Rolling Waves",
++ "map": "San Vansterdam",
++ "outline": [[-312, 1452], [-282, 1406], [-238, 1402], [-205, 1450], [-138, 1505], [-138, 1597], [-200, 1615], [-262, 1587], [-312, 1537]],
++ "spots": [
++  {"id": "cloverleaf", "name": "Cloverleaf", "kind": "bowl", "shape": "polygon", "points": [[-258.5, 1438.0], [-248.0, 1435.5], [-238.0, 1438.0], [-236.5, 1446.0], [-242.0, 1458.5], [-252.0, 1460.0], [-259.0, 1450.0]], "y": [194.32, 207.9], "marker": [-248.09, 205.4, 1447.03]},
++  {"id": "crescent", "name": "Crescent bowl", "kind": "bowl", "shape": "polygon", "points": [[-247.0, 1416.0], [-236.0, 1418.0], [-227.0, 1425.0], [-221.0, 1436.0], [-218.5, 1450.0], [-219.5, 1463.0], [-225.5, 1463.0], [-225.5, 1450.0], [-228.0, 1439.0], [-233.0, 1430.0], [-240.0, 1424.5], [-247.0, 1422.0]], "y": [193.9, 206.13], "marker": [-228.83, 203.63, 1436.56]},
++  {"id": "wave-ledge", "name": "Wave ledge", "kind": "ledge", "shape": "capsule", "a": [-289.5, 1457.0], "b": [-287.5, 1496.0], "radius": 3.5, "y": [196.69, 203.4], "marker": [-288.51, 200.9, 1476.45]},
++  {"id": "bank-hub", "name": "Bank hub", "kind": "bank", "shape": "polygon", "points": [[-277.0, 1462.0], [-250.0, 1463.0], [-229.0, 1468.0], [-214.0, 1480.0], [-219.0, 1496.0], [-236.0, 1507.0], [-252.0, 1492.0], [-271.0, 1490.0]], "y": [195.97, 206.04], "marker": [-245.08, 203.54, 1481.18]},
++  {"id": "flow-bowl", "name": "Flow bowl", "kind": "bowl", "shape": "polygon", "points": [[-212.0, 1463.0], [-196.0, 1461.0], [-183.0, 1477.0], [-187.0, 1495.0], [-205.0, 1497.0], [-212.5, 1481.0]], "y": [196.08, 202.17], "marker": [-198.72, 199.67, 1479.11]},
++  {"id": "manual-pads", "name": "Manual pads", "kind": "ledge", "shape": "polygon", "points": [[-299.0, 1501.0], [-276.0, 1500.0], [-272.0, 1528.0], [-294.0, 1529.0]], "y": [196.68, 204.65], "marker": [-285.27, 202.15, 1514.4]},
++  {"id": "long-ledge", "name": "Long ledge", "kind": "ledge", "shape": "capsule", "a": [-265.5, 1513.5], "b": [-253.0, 1527.5], "radius": 2.2, "y": [196.68, 204.5], "marker": [-259.25, 202.0, 1520.5]},
++  {"id": "big-box", "name": "Big box", "kind": "box", "shape": "polygon", "points": [[-244.0, 1535.0], [-232.0, 1542.0], [-208.0, 1520.0], [-218.0, 1512.5]], "y": [196.28, 208.71], "marker": [-225.68, 206.21, 1527.47]},
++  {"id": "snake-run", "name": "Snake run", "kind": "transition", "shape": "polygon", "points": [[-185.0, 1497.0], [-145.0, 1503.0], [-140.0, 1543.0], [-168.0, 1551.0], [-185.0, 1546.0]], "y": [195.3, 205.91], "marker": [-164.51, 203.41, 1524.32]},
++  {"id": "rail-oval", "name": "Rail oval", "kind": "rail", "shape": "capsule", "a": [-262.0, 1534.0], "b": [-253.0, 1546.0], "radius": 5.0, "y": [196.68, 205.05], "marker": [-257.53, 202.55, 1539.98]},
++  {"id": "pocket", "name": "Pocket", "kind": "bowl", "shape": "polygon", "points": [[-232.0, 1549.0], [-206.0, 1549.0], [-201.0, 1575.0], [-212.0, 1598.0], [-227.0, 1591.0]], "y": [194.96, 204.27], "marker": [-216.69, 201.77, 1570.48]},
++  {"id": "big-bowl", "name": "Big bowl", "kind": "bowl", "shape": "polygon", "points": [[-200.0, 1551.0], [-160.0, 1553.0], [-151.0, 1576.0], [-170.0, 1594.0], [-196.0, 1594.0], [-199.0, 1575.0]], "y": [194.2, 207.05], "marker": [-178.05, 204.55, 1571.98]}
++ ],
++ "starts": [
++  {"position": [-292, 197.74, 1440], "heading": 42},
++  {"position": [-305, 198.6, 1480], "heading": 68},
++  {"position": [-300, 199.09, 1540], "heading": 113},
++  {"position": [-275, 199.48, 1565], "heading": 141},
++  {"position": [-240, 199.74, 1595], "heading": 173},
++  {"position": [-150, 201.12, 1590], "heading": -135},
++  {"position": [-141, 202.96, 1560], "heading": -119},
++  {"position": [-210, 197.36, 1458], "heading": -21},
++  {"position": [-260, 197.74, 1418], "heading": 18},
++  {"position": [-230, 196.77, 1520], "heading": 0}
++ ]
++}
+diff --git a/Extension/Domination/parks/skate3improved-redbowl.json b/Extension/Domination/parks/skate3improved-redbowl.json
+new file mode 100644
+index 0000000..c86ca3d
+--- /dev/null
++++ b/Extension/Domination/parks/skate3improved-redbowl.json
+@@ -0,0 +1,42 @@
++{
++ "schema": 1,
++ "level": "levels/game/dingolevel_reskate_skate3improved/dingolevel_reskate_skate3improved",
++ "park": "Red-bowl park",
++ "map": "Skate 3 Improved",
++ "package": "333-Skate_3_Improved",
++ "outline": [[413, 357], [434, 471], [292, 497], [272, 383]],
++ "spots": [
++  {"id": "deep-end", "name": "Deep end", "kind": "bowl", "shape": "polygon", "points": [[315.0, 437.0], [337.0, 437.0], [339.5, 445.0], [336.5, 453.5], [327.0, 456.5], [317.5, 453.5], [314.0, 445.0]], "y": [-1.99, 11.17], "marker": [326.65, 8.67, 445.73]},
++  {"id": "main-bowl", "name": "Main bowl", "kind": "bowl", "shape": "polygon", "points": [[315.0, 437.0], [314.5, 410.0], [317.5, 407.0], [326.0, 406.6], [330.5, 406.3], [341.0, 405.5], [342.0, 412.0], [351.0, 412.0], [352.5, 404.0], [357.5, 401.0], [369.0, 398.0], [369.0, 417.0], [372.0, 428.0], [369.5, 431.0], [366.0, 434.5], [337.0, 437.0]], "y": [-1.31, 8.44], "marker": [342.88, 5.94, 420.67]},
++  {"id": "east-arm", "name": "Snake arm", "kind": "bowl", "shape": "polygon", "points": [[369.0, 398.0], [368.0, 392.0], [379.0, 390.5], [381.5, 393.5], [382.4, 400.0], [383.0, 405.0], [383.8, 410.0], [384.6, 414.0], [386.0, 423.0], [397.5, 428.5], [398.5, 435.0], [392.5, 441.5], [386.0, 436.0], [384.0, 434.5], [382.0, 433.0], [380.0, 431.4], [379.0, 430.6], [378.0, 430.0], [376.0, 428.0], [372.0, 428.0], [369.0, 417.0]], "y": [-0.65, 10.35], "marker": [380.15, 7.85, 416.08]},
++  {"id": "north-lane", "name": "Sunken lane", "kind": "transition", "shape": "polygon", "points": [[321.0, 391.2], [330.0, 390.7], [342.5, 390.0], [345.0, 395.5], [358.0, 392.5], [357.5, 401.0], [352.5, 404.0], [351.0, 412.0], [342.0, 412.0], [341.0, 405.5], [330.5, 406.3], [326.0, 402.3], [322.0, 399.0], [320.5, 395.0]], "y": [0.07, 8.64], "marker": [339.77, 6.14, 399.48]},
++  {"id": "zigzag-pad", "name": "Zigzag pad", "kind": "ledge", "shape": "polygon", "points": [[314.5, 399.0], [322.0, 399.0], [326.0, 402.3], [326.0, 406.6], [317.5, 407.0], [314.5, 404.5]], "y": [1.57, 8.39], "marker": [320.05, 5.89, 403.02]},
++  {"id": "funbox", "name": "Funbox", "kind": "box", "shape": "polygon", "points": [[364.97, 389.06], [345.07, 394.39], [342.43, 384.54], [362.33, 379.21]], "y": [0.85, 9.35], "marker": [353.7, 6.85, 386.8]},
++  {"id": "top-rail", "name": "Long rail", "kind": "rail", "shape": "capsule", "a": [370.5, 384.3], "b": [397.5, 379.2], "radius": 1.8, "y": [2.25, 9.06], "marker": [384.01, 6.56, 381.75]},
++  {"id": "curved-ledge", "name": "Curved ledge", "kind": "ledge", "shape": "polygon", "points": [[294.5, 418.5], [295.5, 406.0], [300.0, 399.0], [307.0, 394.0], [311.5, 393.5], [312.5, 397.5], [305.0, 400.5], [301.0, 406.5], [299.5, 418.5]], "y": [1.85, 8.45], "marker": [301.32, 5.95, 405.05]},
++  {"id": "west-rail", "name": "Hill rail", "kind": "rail", "shape": "capsule", "a": [295.2, 425.0], "b": [302.8, 463.0], "radius": 2.0, "y": [1.85, 10.99], "marker": [299.0, 8.49, 444.0]},
++  {"id": "bank-curve", "name": "Curved bank", "kind": "bank", "shape": "polygon", "points": [[307.5, 454.5], [318.0, 455.5], [331.0, 462.5], [330.5, 467.5], [318.0, 465.5], [307.0, 459.5]], "y": [2.59, 13.29], "marker": [318.9, 10.79, 460.88]},
++  {"id": "south-pads", "name": "Manual pads", "kind": "ledge", "shape": "polygon", "points": [[348.5, 442.5], [364.5, 441.5], [370.5, 455.0], [370.5, 463.5], [351.0, 467.0], [347.5, 457.0]], "y": [1.26, 9.79], "marker": [358.49, 7.29, 454.12]},
++  {"id": "mid-pad", "name": "Middle pad", "kind": "ledge", "shape": "polygon", "points": [[368.4, 433.2], [369.2, 432.4], [379.0, 430.8], [380.1, 435.2], [379.2, 436.2], [369.8, 438.0], [368.6, 437.2]], "y": [2.32, 9.0], "marker": [374.06, 6.5, 434.41]},
++  {"id": "twin-ledges", "name": "Twin ledges", "kind": "ledge", "shape": "polygon", "points": [[382.4, 400.0], [392.5, 394.3], [399.3, 394.3], [400.8, 406.5], [390.0, 414.3], [384.6, 414.0], [383.8, 410.0], [383.0, 405.0]], "y": [1.86, 9.06], "marker": [391.53, 6.56, 403.88]},
++  {"id": "kinked-ledge", "name": "Kinked ledge", "kind": "ledge", "shape": "polygon", "points": [[402.6, 442.8], [405.9, 426.2], [411.0, 425.0], [411.7, 425.6], [413.1, 434.8], [406.2, 445.1], [403.2, 443.6]], "y": [2.35, 8.92], "marker": [407.87, 6.42, 434.58]},
++  {"id": "angled-ledge", "name": "Angled ledge", "kind": "ledge", "shape": "polygon", "points": [[384.1, 459.6], [400.3, 446.1], [403.4, 447.9], [403.6, 449.0], [394.4, 462.7], [385.8, 464.7], [384.1, 460.8]], "y": [2.34, 8.92], "marker": [393.72, 6.42, 456.21]},
++  {"id": "west-mound", "name": "West mound", "kind": "mound", "shape": "capsule", "a": [303.0, 418.8], "b": [303.5, 419.2], "radius": 3.6, "y": [1.93, 9.1], "marker": [303.25, 6.6, 419.0]},
++  {"id": "bowl-mound", "name": "Bowl-side mound", "kind": "mound", "shape": "capsule", "a": [311.0, 430.6], "b": [311.4, 431.0], "radius": 3.5, "y": [1.92, 9.79], "marker": [311.19, 7.29, 430.81]},
++  {"id": "east-mound", "name": "East mound", "kind": "mound", "shape": "capsule", "a": [391.5, 420.4], "b": [392.0, 420.8], "radius": 3.8, "y": [2.41, 9.59], "marker": [391.75, 7.09, 420.59]},
++  {"id": "south-mound", "name": "South mound", "kind": "mound", "shape": "capsule", "a": [377.5, 449.7], "b": [378.0, 450.2], "radius": 3.8, "y": [2.41, 9.59], "marker": [377.75, 7.09, 449.98]},
++  {"id": "south-curb", "name": "South curb", "kind": "ledge", "shape": "capsule", "a": [351.0, 470.9], "b": [323.0, 475.9], "radius": 1.4, "y": [1.35, 10.61], "marker": [337.0, 8.11, 473.4]}
++ ],
++ "starts": [
++  {"position": [343.5, 2.55, 469.2], "heading": 160},
++  {"position": [375.0, 3.32, 470.0], "heading": -162},
++  {"position": [405.0, 3.35, 465.0], "heading": -132},
++  {"position": [420.0, 3.35, 445.0], "heading": -108},
++  {"position": [415.0, 3.35, 415.0], "heading": -80},
++  {"position": [405.0, 3.35, 385.0], "heading": -48},
++  {"position": [380.0, 3.2, 375.0], "heading": -22},
++  {"position": [350.0, 2.9, 375.0], "heading": 11},
++  {"position": [320.0, 2.85, 385.0], "heading": 45},
++  {"position": [300.0, 2.85, 395.0], "heading": 63}
++ ]
++}
+diff --git a/Extension/Domination/parks/specs/s3i-banks.spec.json b/Extension/Domination/parks/specs/s3i-banks.spec.json
+new file mode 100644
+index 0000000..3600122
+--- /dev/null
++++ b/Extension/Domination/parks/specs/s3i-banks.spec.json
+@@ -0,0 +1,24 @@
++{
++ "id": "s3i-banks",
++ "level": "levels/game/dingolevel_reskate_skate3improved/dingolevel_reskate_skate3improved",
++ "park": "Sunken banks",
++ "map": "Skate 3 Improved",
++ "package": "333-Skate_3_Improved",
++ "view": [400, -1580, 560, -1410],
++ "spots": [
++  {"id": "center", "name": "Statue dish", "kind": "bowl", "a": [470.0, -1507.0], "b": [470.1, -1506.9], "r": 21},
++  {"id": "bank-south", "name": "South slope", "kind": "bank", "points": [[440.3, -1477.3], [446.67, -1472.08], [453.93, -1468.2], [461.81, -1465.81], [470.0, -1465.0], [478.19, -1465.81], [486.07, -1468.2], [493.33, -1472.08], [499.7, -1477.3], [485.2, -1491.8], [481.94, -1489.12], [478.23, -1487.14], [474.19, -1485.91], [470.0, -1485.5], [465.81, -1485.91], [461.77, -1487.14], [458.06, -1489.12], [454.8, -1491.8]]},
++  {"id": "bank-east", "name": "East slope", "kind": "bank", "points": [[503.23, -1473.77], [508.02, -1479.37], [511.88, -1485.66], [514.7, -1492.48], [516.42, -1499.65], [517.0, -1507.0], [516.42, -1514.35], [514.7, -1521.52], [511.88, -1528.34], [508.02, -1534.63], [503.23, -1540.23], [485.2, -1522.2], [487.39, -1519.64], [489.16, -1516.76], [490.45, -1513.64], [491.24, -1510.36], [491.5, -1507.0], [491.24, -1503.64], [490.45, -1500.36], [489.16, -1497.24], [487.39, -1494.36], [485.2, -1491.8]]},
++  {"id": "bank-north", "name": "North slope", "kind": "bank", "points": [[503.23, -1540.23], [497.63, -1545.02], [491.34, -1548.88], [484.52, -1551.7], [477.35, -1553.42], [470.0, -1554.0], [462.65, -1553.42], [455.48, -1551.7], [448.66, -1548.88], [442.37, -1545.02], [436.77, -1540.23], [454.8, -1522.2], [457.36, -1524.39], [460.24, -1526.16], [463.36, -1527.45], [466.64, -1528.24], [470.0, -1528.5], [473.36, -1528.24], [476.64, -1527.45], [479.76, -1526.16], [482.64, -1524.39], [485.2, -1522.2]]},
++  {"id": "bank-west", "name": "West slope", "kind": "bank", "points": [[436.77, -1540.23], [431.98, -1534.63], [428.12, -1528.34], [425.3, -1521.52], [423.58, -1514.35], [423.0, -1507.0], [423.58, -1499.65], [425.3, -1492.48], [428.12, -1485.66], [431.98, -1479.37], [436.77, -1473.77], [454.8, -1491.8], [452.61, -1494.36], [450.84, -1497.24], [449.55, -1500.36], [448.76, -1503.64], [448.5, -1507.0], [448.76, -1510.36], [449.55, -1513.64], [450.84, -1516.76], [452.61, -1519.64], [454.8, -1522.2]]},
++  {"id": "east-stairs", "name": "East stairs", "kind": "stairs", "points": [[533, -1543], [560, -1543], [560, -1503], [533, -1503]]}
++ ],
++ "starts": [
++  [420, -1507, 90],
++  [435, -1542, 45],
++  [470, -1557, 0],
++  [505, -1542, -45],
++  [452, -1458, 160],
++  [520, -1507, -90]
++ ]
++}
+diff --git a/Extension/Domination/parks/specs/s3i-hillpark.spec.json b/Extension/Domination/parks/specs/s3i-hillpark.spec.json
+new file mode 100644
+index 0000000..385bc00
+--- /dev/null
++++ b/Extension/Domination/parks/specs/s3i-hillpark.spec.json
+@@ -0,0 +1,28 @@
++{
++ "id": "s3i-hillpark",
++ "level": "levels/game/dingolevel_reskate_skate3improved/dingolevel_reskate_skate3improved",
++ "park": "Hillside park",
++ "map": "Skate 3 Improved",
++ "package": "333-Skate_3_Improved",
++ "view": [1350, 298, 1510, 470],
++ "spots": [
++  {"id": "deep-bowl", "name": "Deep bowl", "kind": "bowl", "points": [[1448, 355], [1495, 355], [1498, 410], [1490, 432], [1455, 432], [1441, 415], [1447, 390], [1450, 370]]},
++  {"id": "north-pool", "name": "North pool", "kind": "bowl", "points": [[1463, 302], [1500, 302], [1500, 345], [1475, 346], [1466, 336]]},
++  {"id": "pyramid", "name": "Pyramid", "kind": "box", "points": [[1400, 312], [1418, 316], [1408, 343], [1395, 338]]},
++  {"id": "dish", "name": "Round dish", "kind": "bowl", "a": [1415.5, 357], "b": [1415.6, 357.1], "r": 6},
++  {"id": "curved-ledges", "name": "Curved ledges", "kind": "ledge", "points": [[1388, 362], [1400, 362], [1415, 378], [1418, 393], [1404, 394], [1393, 380]]},
++  {"id": "quarter-arc", "name": "Quarter arc", "kind": "transition", "points": [[1370, 350], [1388, 350], [1388, 416], [1374, 413], [1368, 380]]},
++  {"id": "hips", "name": "Twin hips", "kind": "transition", "points": [[1404, 402], [1421, 402], [1421, 447], [1404, 447]]},
++  {"id": "bank-wall", "name": "Bank wall", "kind": "bank", "points": [[1424, 372], [1438, 362], [1446, 367], [1444, 388], [1428, 392]]},
++  {"id": "hubba-steps", "name": "North ledge", "kind": "ledge", "points": [[1393, 300], [1458, 300], [1458, 307], [1393, 307]]}
++ ],
++ "starts": [
++  [1380, 430, 135],
++  [1430, 435, 180],
++  [1460, 440, -153],
++  [1440, 350, -18],
++  [1395, 330, 35],
++  [1500, 425, -123],
++  [1360, 380, 90]
++ ]
++}
+diff --git a/Extension/Domination/parks/specs/s3i-industrial.spec.json b/Extension/Domination/parks/specs/s3i-industrial.spec.json
+new file mode 100644
+index 0000000..973031f
+--- /dev/null
++++ b/Extension/Domination/parks/specs/s3i-industrial.spec.json
+@@ -0,0 +1,25 @@
++{
++ "id": "s3i-industrial",
++ "level": "levels/game/dingolevel_reskate_skate3improved/dingolevel_reskate_skate3improved",
++ "park": "Industrial bowls",
++ "map": "Skate 3 Improved",
++ "package": "333-Skate_3_Improved",
++ "view": [680, 1125, 840, 1290],
++ "spots": [
++  {"id": "west-pocket", "name": "West pocket", "kind": "bowl", "points": [[688, 1176], [700, 1170], [715, 1176], [716, 1196], [700, 1200], [688, 1194]]},
++  {"id": "pyramid", "name": "Pyramid hump", "kind": "mound", "points": [[726, 1166], [741.5, 1166], [741, 1180], [728, 1178]]},
++  {"id": "ne-pocket", "name": "North pocket", "kind": "bowl", "points": [[744, 1150], [761, 1152], [763, 1172], [752, 1180], [745, 1168]]},
++  {"id": "junction", "name": "Junction", "kind": "bowl", "points": [[718, 1181], [742, 1182], [752, 1192], [745, 1212], [728, 1214], [718, 1199]]},
++  {"id": "spine-arm", "name": "Spine arm", "kind": "bowl", "points": [[745, 1212], [760, 1199], [790, 1219], [782, 1230], [766, 1240], [748, 1228]]},
++  {"id": "big-pipe", "name": "Big pipe", "kind": "rail", "a": [683, 1248], "b": [721, 1211.5], "r": 2.5},
++  {"id": "rim-rail", "name": "North rim", "kind": "rail", "a": [727, 1142], "b": [766, 1150], "r": 2}
++ ],
++ "starts": [
++  [705, 1215, 104],
++  [722, 1160, 27],
++  [770, 1190, -59],
++  [757, 1248, -164],
++  [735, 1235, 162],
++  [780, 1180, -54]
++ ]
++}
+diff --git a/Extension/Domination/parks/specs/s3i-loans.spec.json b/Extension/Domination/parks/specs/s3i-loans.spec.json
+new file mode 100644
+index 0000000..a8552df
+--- /dev/null
++++ b/Extension/Domination/parks/specs/s3i-loans.spec.json
+@@ -0,0 +1,24 @@
++{
++ "id": "s3i-loans",
++ "level": "levels/game/dingolevel_reskate_skate3improved/dingolevel_reskate_skate3improved",
++ "park": "Loans plaza",
++ "map": "Skate 3 Improved",
++ "package": "333-Skate_3_Improved",
++ "view": [1045, -1162, 1162, -1060],
++ "spots": [
++  {"id": "zigzags-west", "name": "West fountain ledges", "kind": "ledge", "points": [[1050.5, -1122], [1092, -1122], [1092, -1098], [1050.5, -1098]]},
++  {"id": "zigzags-east", "name": "East fountain ledges", "kind": "ledge", "points": [[1092, -1122], [1136, -1122], [1136, -1098], [1092, -1098]]},
++  {"id": "rail-bank", "name": "Rail bank", "kind": "bank", "points": [[1050.5, -1146], [1105, -1146], [1105, -1128], [1050.5, -1128]]},
++  {"id": "north-bank", "name": "North bank", "kind": "bank", "points": [[1105, -1146], [1156, -1146], [1156, -1128], [1105, -1128]]},
++  {"id": "south-steps", "name": "South steps", "kind": "stairs", "points": [[1072, -1092], [1156, -1092], [1156, -1066], [1072, -1066]]},
++  {"id": "benches", "name": "Back wall", "kind": "ledge", "a": [1086, -1153.5], "b": [1140, -1153.5], "r": 2.2}
++ ],
++ "starts": [
++  [1070, -1125, 63],
++  [1110, -1125, -34],
++  [1065, -1095, 113],
++  [1145, -1110, -90],
++  [1145, -1125, -72],
++  [1100, -1095, 180]
++ ]
++}
+diff --git a/Extension/Domination/parks/specs/sanvan-bridge.spec.json b/Extension/Domination/parks/specs/sanvan-bridge.spec.json
+new file mode 100644
+index 0000000..20dbf85
+--- /dev/null
++++ b/Extension/Domination/parks/specs/sanvan-bridge.spec.json
+@@ -0,0 +1,26 @@
++{
++ "id": "sanvan-bridge",
++ "level": "levels/game/bam_levelroot/bam_levelroot",
++ "park": "Bonski Park",
++ "map": "San Vansterdam",
++ "view": [400, 1052, 492, 1178],
++ "ceiling": 210.0,
++ "spots": [
++  {"id": "north-bowl", "name": "North bowl", "kind": "bowl", "points": [[412.5, 1060], [447.5, 1060], [447.5, 1087.5], [412.5, 1087.5]]},
++  {"id": "hump-bowl", "name": "Hump bowl", "kind": "bowl", "points": [[409.5, 1088.5], [458, 1088.5], [458, 1109.5], [409.5, 1109.5]]},
++  {"id": "wall-bank", "name": "Wall bank", "kind": "bank", "points": [[465.5, 1083], [474.5, 1083], [474.5, 1105], [465.5, 1105]]},
++  {"id": "coping-ledges", "name": "Coping ledges", "kind": "ledge", "points": [[409.5, 1109.5], [450, 1109.5], [450, 1115.5], [409.5, 1115.5]]},
++  {"id": "volcano", "name": "Volcano", "kind": "mound", "a": [462.4, 1118], "b": [462.5, 1118.1], "r": 4.6},
++  {"id": "west-run", "name": "West run", "kind": "transition", "points": [[409.5, 1115.5], [430, 1115.5], [430, 1167], [409.5, 1167]]},
++  {"id": "kidney", "name": "Kidney bowl", "kind": "bowl", "points": [[430, 1123], [457, 1123], [463, 1128], [463, 1163], [430, 1163]]},
++  {"id": "east-bank", "name": "East bank", "kind": "bank", "points": [[472.5, 1105.5], [477, 1105.5], [483, 1122], [483, 1133], [475, 1133], [468, 1124]]}
++ ],
++ "starts": [
++  [455, 1080, -25],
++  [470, 1070, -36],
++  [461, 1095, -51],
++  [445, 1119, -144],
++  [430, 1056, 10],
++  [455, 1060, -16]
++ ]
++}
+diff --git a/Extension/Domination/parks/specs/sanvan-elone.spec.json b/Extension/Domination/parks/specs/sanvan-elone.spec.json
+new file mode 100644
+index 0000000..d8537ae
+--- /dev/null
++++ b/Extension/Domination/parks/specs/sanvan-elone.spec.json
+@@ -0,0 +1,23 @@
++{
++ "id": "sanvan-elone",
++ "level": "levels/game/bam_levelroot/bam_levelroot",
++ "park": "El-One Courts",
++ "map": "San Vansterdam",
++ "view": [40, 1140, 165, 1245],
++ "spots": [
++  {"id": "curved-ledge", "name": "Curved ledge", "kind": "ledge", "points": [[91, 1175], [100, 1171.5], [110, 1177.5], [117.5, 1188], [117.5, 1200.5], [111.5, 1202], [108, 1190], [100, 1182], [92, 1180.5]]},
++  {"id": "stair-blocks", "name": "Stair blocks", "kind": "stairs", "points": [[66, 1199], [80, 1192], [91, 1203], [90, 1212], [77, 1219], [67, 1214]]},
++  {"id": "west-stairs", "name": "West stairs", "kind": "stairs", "points": [[49.5, 1196], [60.5, 1196], [60.5, 1210], [49.5, 1210]]},
++  {"id": "diagonal-stairs", "name": "Diagonal stairs", "kind": "stairs", "points": [[122, 1158], [130, 1151], [147.5, 1180], [140, 1190], [132, 1178]]},
++  {"id": "long-bank", "name": "Long bank", "kind": "bank", "points": [[99, 1215], [136, 1188], [139.5, 1192.5], [101.5, 1219.5]]}
++ ],
++ "starts": [
++  [80, 1185, 45],
++  [75, 1232, 148],
++  [85, 1225, 158],
++  [100, 1209, -151],
++  [112, 1165, -26],
++  [70, 1180, 51],
++  [122, 1192, -73]
++ ]
++}
+diff --git a/Extension/Domination/parks/specs/sanvan-flowtopia.spec.json b/Extension/Domination/parks/specs/sanvan-flowtopia.spec.json
+new file mode 100644
+index 0000000..d8826dc
+--- /dev/null
++++ b/Extension/Domination/parks/specs/sanvan-flowtopia.spec.json
+@@ -0,0 +1,30 @@
++{
++ "id": "sanvan-flowtopia",
++ "level": "levels/game/bam_levelroot/bam_levelroot",
++ "park": "FlowTopia",
++ "map": "San Vansterdam",
++ "view": [612, 1278, 716, 1472],
++ "outline": [[620, 1280], [712, 1280], [712, 1424], [686, 1424], [686, 1440], [648, 1440], [648, 1470], [620, 1470]],
++ "spots": [
++  {"id": "wedges", "name": "Wedges", "kind": "bank", "points": [[672, 1356], [685, 1351], [701.5, 1356], [701.5, 1375], [700, 1392], [686, 1393], [676, 1386], [668, 1380], [670, 1368]]},
++  {"id": "diamond-bank", "name": "Diamond bank", "kind": "bank", "points": [[639, 1316], [652.5, 1360], [636, 1397], [629, 1352]]},
++  {"id": "ribbed-fan", "name": "Ribbed fan", "kind": "bank", "points": [[656, 1281], [675, 1281], [668, 1331], [662, 1327], [657, 1300]]},
++  {"id": "kinked-ledges", "name": "Kinked ledges", "kind": "ledge", "points": [[645, 1314], [652, 1312], [667, 1340], [665, 1352], [657, 1352]]},
++  {"id": "cross", "name": "The cross", "kind": "mound", "a": [655.6, 1395.3], "b": [655.7, 1395.4], "r": 7},
++  {"id": "pads-west", "name": "West pads", "kind": "ledge", "points": [[641, 1406], [658, 1406], [657, 1419], [641, 1419]]},
++  {"id": "pads-east", "name": "East pads", "kind": "ledge", "points": [[667, 1406], [689, 1407], [688, 1420], [667, 1420]]},
++  {"id": "long-rail", "name": "Long rail", "kind": "rail", "a": [632.7, 1425], "b": [632.7, 1452], "r": 2.5},
++  {"id": "quarter-arc", "name": "Quarter arc", "kind": "transition", "points": [[622, 1290], [634, 1290], [634, 1310], [622, 1310]]}
++ ],
++ "starts": [
++  [626, 1335, 99],
++  [626, 1400, 128],
++  [648, 1300, 13],
++  [648, 1338, 28],
++  [645, 1432, 162],
++  [660, 1422, 180],
++  [690, 1428, -158],
++  [700, 1400, -131],
++  [662, 1405, 175]
++ ]
++}
+diff --git a/Extension/Domination/parks/specs/sanvan-mcorp.spec.json b/Extension/Domination/parks/specs/sanvan-mcorp.spec.json
+new file mode 100644
+index 0000000..e8647cf
+--- /dev/null
++++ b/Extension/Domination/parks/specs/sanvan-mcorp.spec.json
+@@ -0,0 +1,32 @@
++{
++ "id": "sanvan-mcorp",
++ "level": "levels/game/bam_levelroot/bam_levelroot",
++ "park": "Hartcore Plaza",
++ "map": "San Vansterdam",
++ "view": [360, 1258, 550, 1425],
++ "spots": [
++  {"id": "rings", "name": "Twin rings", "kind": "bowl", "a": [380, 1300], "b": [392, 1312], "r": 6.5},
++  {"id": "zigzag", "name": "Zigzag ledges", "kind": "ledge", "points": [[463, 1324], [478, 1322], [493, 1338], [492, 1362], [482, 1366], [466, 1360], [460, 1345]]},
++  {"id": "pyramid-north", "name": "North pyramid", "kind": "box", "points": [[465, 1287], [481, 1287], [481, 1304], [465, 1304]]},
++  {"id": "banks", "name": "Hubba banks", "kind": "bank", "points": [[431, 1366], [474, 1373], [474, 1384], [431, 1383]]},
++  {"id": "stair-box", "name": "Stair box", "kind": "box", "points": [[476, 1370], [490, 1370], [490, 1386], [476, 1386]]},
++  {"id": "stairs", "name": "East stairs", "kind": "stairs", "points": [[505, 1350], [523, 1350], [523, 1376], [505, 1376]]},
++  {"id": "kicker", "name": "Kicker block", "kind": "box", "points": [[373, 1391], [417, 1391], [417, 1407.5], [373, 1407.5]]},
++  {"id": "pyramid-south", "name": "South pyramid", "kind": "box", "points": [[428, 1391], [441, 1391], [441, 1406], [428, 1406]]},
++  {"id": "fountain", "name": "Fountain dish", "kind": "bowl", "a": [419.5, 1416], "b": [419.6, 1416.1], "r": 8},
++  {"id": "round-bowl", "name": "Round bowl", "kind": "bowl", "points": [[442, 1394], [498, 1394], [498, 1424], [442, 1424]]},
++  {"id": "mini-bowl", "name": "Mini bowl", "kind": "bowl", "a": [508.5, 1397.5], "b": [508.6, 1397.6], "r": 5.5},
++  {"id": "pyramid-east", "name": "East pyramid", "kind": "box", "points": [[518, 1391], [533, 1391], [533, 1407], [518, 1407]]}
++ ],
++ "starts": [
++  [440, 1358, 79],
++  [500, 1310, -45],
++  [455, 1388, -170],
++  [400, 1370, 101],
++  [520, 1330, -67],
++  [485, 1312, -36],
++  [395, 1385, 114],
++  [540, 1380, -103],
++  [372, 1350, 83]
++ ]
++}
+diff --git a/Extension/Domination/parks/specs/sanvan-seaside.spec.json b/Extension/Domination/parks/specs/sanvan-seaside.spec.json
+new file mode 100644
+index 0000000..e2e96e8
+--- /dev/null
++++ b/Extension/Domination/parks/specs/sanvan-seaside.spec.json
+@@ -0,0 +1,34 @@
++{
++ "id": "sanvan-seaside",
++ "level": "levels/game/bam_levelroot/bam_levelroot",
++ "park": "Rolling Waves",
++ "map": "San Vansterdam",
++ "view": [-315, 1400, -138, 1615],
++ "outline": [[-312, 1452], [-282, 1406], [-238, 1402], [-205, 1450], [-138, 1505], [-138, 1597], [-200, 1615], [-262, 1587], [-312, 1537]],
++ "spots": [
++  {"id": "cloverleaf", "name": "Cloverleaf", "kind": "bowl", "points": [[-258.5, 1438], [-248, 1435.5], [-238, 1438], [-236.5, 1446], [-242, 1458.5], [-252, 1460], [-259, 1450]]},
++  {"id": "crescent", "name": "Crescent bowl", "kind": "bowl", "points": [[-247, 1416], [-236, 1418], [-227, 1425], [-221, 1436], [-218.5, 1450], [-219.5, 1463], [-225.5, 1463], [-225.5, 1450], [-228, 1439], [-233, 1430], [-240, 1424.5], [-247, 1422]]},
++  {"id": "wave-ledge", "name": "Wave ledge", "kind": "ledge", "a": [-289.5, 1457], "b": [-287.5, 1496], "r": 3.5},
++  {"id": "bank-hub", "name": "Bank hub", "kind": "bank", "points": [[-277, 1462], [-250, 1463], [-229, 1468], [-214, 1480], [-219, 1496], [-236, 1507], [-252, 1492], [-271, 1490]]},
++  {"id": "flow-bowl", "name": "Flow bowl", "kind": "bowl", "points": [[-212, 1463], [-196, 1461], [-183, 1477], [-187, 1495], [-205, 1497], [-212.5, 1481]]},
++  {"id": "manual-pads", "name": "Manual pads", "kind": "ledge", "points": [[-299, 1501], [-276, 1500], [-272, 1528], [-294, 1529]]},
++  {"id": "long-ledge", "name": "Long ledge", "kind": "ledge", "a": [-265.5, 1513.5], "b": [-253, 1527.5], "r": 2.2},
++  {"id": "big-box", "name": "Big box", "kind": "box", "points": [[-244, 1535], [-232, 1542], [-208, 1520], [-218, 1512.5]]},
++  {"id": "snake-run", "name": "Snake run", "kind": "transition", "points": [[-185, 1497], [-145, 1503], [-140, 1543], [-168, 1551], [-185, 1546]]},
++  {"id": "rail-oval", "name": "Rail oval", "kind": "rail", "a": [-262, 1534], "b": [-253, 1546], "r": 5},
++  {"id": "pocket", "name": "Pocket", "kind": "bowl", "points": [[-232, 1549], [-206, 1549], [-201, 1575], [-212, 1598], [-227, 1591]]},
++  {"id": "big-bowl", "name": "Big bowl", "kind": "bowl", "points": [[-200, 1551], [-160, 1553], [-151, 1576], [-170, 1594], [-196, 1594], [-199, 1575]]}
++ ],
++ "starts": [
++  [-292, 1440, 42],
++  [-305, 1480, 68],
++  [-300, 1540, 113],
++  [-275, 1565, 141],
++  [-240, 1595, 173],
++  [-150, 1590, -135],
++  [-141, 1560, -119],
++  [-210, 1458, -21],
++  [-260, 1418, 18],
++  [-230, 1520, 0]
++ ]
++}
+diff --git a/Extension/Domination/tools/build_park.py b/Extension/Domination/tools/build_park.py
+new file mode 100644
+index 0000000..11c5c79
+--- /dev/null
++++ b/Extension/Domination/tools/build_park.py
+@@ -0,0 +1,137 @@
++"""Build a Domination park file from a spec (hand-picked footprints) measured against a scan.
++
++usage: python -I build_park.py <spec.json> <scan.npz> <out.json> <out.png>
++
++spec.json:
++  {"id": "...", "level": "...", "park": "Name", "map": "San Vansterdam", "package": "",
++   "view": [x0, z0, x1, z1],              # the picture's area (also the default outline)
++   "outline": [[x, z], ...],              # optional: spots must stay inside it
++   "spots": [{"id": "...", "name": "...", "kind": "bowl",
++              "points": [[x, z], ...]}   # a polygon, or
++             | {"id", "name", "kind", "a": [x, z], "b": [x, z], "r": 2.0}],   # a capsule
++   "starts": [[x, z, heading], ...],
++   "ceiling": 210.0}                      # optional: a roof or bridge deck's underside over the park
++The scan .npz is render_scan.py's (h over the grid xs, zs). Each spot's height range runs from its
++floor - 1 m to its top + 5 m, and its marker floats 2.5 m above its top at the footprint's centre;
++floor and top are the 2nd and 97th height percentiles inside it, so a lamp post or a tree's crown
++inside a footprint does not lift it. Fails when two spots overlap, a spot leaves the outline, or a
++start stands on a spot.
++"""
++import json, sys
++import numpy as np
++import matplotlib
++matplotlib.use("Agg")
++import matplotlib.pyplot as plt
++from matplotlib.colors import LightSource
++from matplotlib.path import Path
++from matplotlib.patches import Polygon
++
++
++def outline_of(s):
++    if "points" in s:
++        return [tuple(p) for p in s["points"]]
++    a, b, r = np.array(s["a"], float), np.array(s["b"], float), float(s["r"])
++    d = b - a
++    u = d / np.linalg.norm(d) if np.linalg.norm(d) > 1e-6 else np.array([1.0, 0.0])
++    n = np.array([-u[1], u[0]])
++    st = np.arctan2(n[1], n[0])
++    arc = lambda c, start: [tuple(c + r * np.array([np.cos(t), np.sin(t)])) for t in np.linspace(start, start + np.pi, 9)]
++    return arc(b, st - np.pi) + arc(a, st)
++
++
++def mask_of(s, X, Z):
++    pts = np.stack([X.ravel(), Z.ravel()], 1)
++    if "points" in s:
++        return Path(s["points"]).contains_points(pts).reshape(X.shape)
++    a, b, r = np.array(s["a"], float), np.array(s["b"], float), float(s["r"])
++    d = b - a
++    L2 = max(float(d @ d), 1e-9)
++    t = np.clip(((pts - a) @ d) / L2, 0, 1)
++    near = a + t[:, None] * d
++    return (np.hypot(*(pts - near).T) <= r).reshape(X.shape)
++
++
++def main():
++    spec = json.load(open(sys.argv[1], encoding="utf-8"))
++    d = np.load(sys.argv[2]); h, xs, zs = d["h"], d["xs"], d["zs"]
++    view = spec["view"]
++    outline = spec.get("outline") or [[view[0], view[1]], [view[2], view[1]], [view[2], view[3]], [view[0], view[3]]]
++    # Sample off the grid lines so footprints sharing an edge do not count as overlapping.
++    X, Z = np.meshgrid(xs + 0.1237, zs + 0.1291)
++    inside = Path(outline).contains_points(np.stack([X.ravel(), Z.ravel()], 1)).reshape(X.shape)
++    step = float(xs[1] - xs[0])
++    owner = np.full(h.shape, -1)
++    spots, problems = [], []
++    for k, s in enumerate(spec["spots"]):
++        m = mask_of(s, X, Z)
++        if not m.any():
++            problems.append(f"{s['id']}: empty"); continue
++        if (m & ~inside).any(): problems.append(f"{s['id']}: {int((m & ~inside).sum())} points outside the outline")
++        shared = m & (owner >= 0)
++        if shared.any():
++            other = spec["spots"][np.bincount(owner[shared]).argmax()]["id"]
++            problems.append(f"{s['id']}: overlaps {other} on {shared.sum() * step * step:.1f} m2")
++        owner[m & (owner < 0)] = k
++        hh = h[m]; hh = hh[np.isfinite(hh)]
++        floor, top = float(np.percentile(hh, 2)), float(np.percentile(hh, 97))
++        cx, cz = float(X[m].mean()), float(Z[m].mean())
++        spot = {"id": s["id"], "name": s["name"], "kind": s.get("kind", "spot")}
++        if "points" in s:
++            spot["shape"] = "polygon"; spot["points"] = [[round(float(x), 2), round(float(z), 2)] for x, z in s["points"]]
++        else:
++            spot["shape"] = "capsule"; spot["a"] = [float(v) for v in s["a"]]; spot["b"] = [float(v) for v in s["b"]]; spot["radius"] = float(s["r"])
++        # Under a roof or a bridge ("ceiling": its underside), the range and marker stay below it:
++        # the outlines' ground rays start at the range's top.
++        ceiling = spec.get("ceiling")
++        y_top = top + 5.0 if ceiling is None else min(top + 5.0, ceiling - 0.5)
++        marker_y = top + 2.5 if ceiling is None else min(top + 2.5, ceiling - 1.0)
++        spot["y"] = [round(floor - 1.0, 2), round(y_top, 2)]
++        spot["marker"] = [round(cx, 2), round(marker_y, 2), round(cz, 2)]
++        spot["area"] = round(float(m.sum() * step * step), 1)
++        spots.append(spot)
++        print(f"{s['id']:16} {spot['kind']:10} area {spot['area']:7.1f} m2  floor {floor:7.2f}  top {top:7.2f}")
++    starts = []
++    for x, z, heading in spec.get("starts", []):
++        j, i = int(np.argmin(abs(zs - z))), int(np.argmin(abs(xs - x)))
++        starts.append({"position": [x, round(float(h[j, i]) + 0.05, 2), z], "heading": heading})
++        if owner[j, i] >= 0: problems.append(f"start ({x}, {z}) is on spot {spec['spots'][owner[j, i]]['id']}")
++    park = {"schema": 1, "level": spec["level"], "park": spec["park"]}
++    if spec.get("map"): park["map"] = spec["map"]
++    if spec.get("package"): park["package"] = spec["package"]
++    park["source"] = f"{sys.argv[2]}, spots in {sys.argv[1]} (tools/build_park.py)"
++    park["outline"] = [list(p) for p in outline]
++    park["spots"] = spots
++    park["starts"] = starts
++    json.dump(park, open(sys.argv[3], "w", encoding="utf-8"), indent=1)
++
++    x0, z0, x1, z1 = view
++    i0, i1 = np.searchsorted(xs, x0), np.searchsorted(xs, x1)
++    j0, j1 = np.searchsorted(zs, z0), np.searchsorted(zs, z1)
++    hv = h[j0:j1, i0:i1]
++    lo, hi = np.nanpercentile(hv, 1), np.nanpercentile(hv, 97)
++    rgb = LightSource(315, 45).shade(np.clip(hv, lo, hi), cmap=plt.cm.terrain, vert_exag=2, dx=step, dy=step, blend_mode="soft", vmin=lo, vmax=hi)
++    fig, ax = plt.subplots(figsize=(13, 13 * (z1 - z0) / max(x1 - x0, 1) + 1), dpi=110)
++    ax.imshow(rgb, origin="lower", extent=(xs[i0], xs[i1 - 1], zs[j0], zs[j1 - 1]), interpolation="nearest")
++    ax.invert_yaxis()
++    ax.add_patch(Polygon(outline, closed=True, fill=False, ec="red", lw=2, ls="--"))
++    colours = plt.cm.tab20(np.linspace(0, 1, max(len(spec["spots"]), 2)))
++    for s, c, out in zip(spec["spots"], colours, spots):
++        ax.add_patch(Polygon(outline_of(s), closed=True, fc=(*c[:3], 0.35), ec=c, lw=1.5))
++        ax.text(out["marker"][0], out["marker"][2], s["name"], fontsize=8, ha="center", va="center", color="white",
++                bbox=dict(boxstyle="round,pad=0.2", fc="black", alpha=0.7, lw=0))
++    for n, st in enumerate(starts, 1):
++        x, _, z = st["position"]; a = np.radians(st["heading"])
++        ax.annotate("", xy=(x + 5 * np.sin(a), z + 5 * np.cos(a)), xytext=(x, z), arrowprops=dict(arrowstyle="->", color="yellow", lw=2))
++        ax.text(x, z, str(n), fontsize=8, ha="center", va="center", color="black", bbox=dict(boxstyle="circle,pad=0.2", fc="yellow", lw=0))
++    ax.set_xlim(x0, x1); ax.set_ylim(z1, z0)
++    ax.set_xticks(np.arange(np.ceil(x0 / 10) * 10, x1 + 1, 10)); ax.set_yticks(np.arange(np.ceil(z0 / 10) * 10, z1 + 1, 10)); ax.tick_params(labelsize=7)
++    ax.grid(color="black", alpha=0.2, lw=0.5)
++    ax.set_title(f"Domination: {spec['park']}, {len(spots)} spots and {len(starts)} starts (yellow, facing the arrow)")
++    fig.tight_layout(); fig.savefig(sys.argv[4])
++    if problems:
++        print("PROBLEMS:"); [print("  " + p) for p in problems]; sys.exit(1)
++    print("ok:", len(spots), "spots, no overlaps")
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/Extension/Domination/tools/find_features.py b/Extension/Domination/tools/find_features.py
+new file mode 100644
+index 0000000..8324d97
+--- /dev/null
++++ b/Extension/Domination/tools/find_features.py
+@@ -0,0 +1,89 @@
++"""Find the skateable features in a rendered scan (.npz from render_scan.py) inside a park outline.
++
++usage: python -I find_features.py <scan.npz> <out_prefix> --outline x z x z ...
++
++Raised features (ledges, boxes, banks, rails, mounds) are what stands above the local ground
++(grey opening over 8 m); dips (bowls, pools) are what lies below it (grey closing). Each connected
++piece is reported with its oriented footprint (centre, length, width, yaw), height and slope.
++Writes <out_prefix>-features.json and <out_prefix>-features.png.
++"""
++import argparse, json
++import numpy as np
++from scipy import ndimage
++import matplotlib
++matplotlib.use("Agg")
++import matplotlib.pyplot as plt
++from matplotlib.path import Path
++from matplotlib.patches import Polygon
++
++
++def footprint(px, pz):
++    """Oriented box of points: centre, half-length along the long axis, half-width, yaw (deg)."""
++    c = np.array([px.mean(), pz.mean()])
++    pts = np.stack([px - c[0], pz - c[1]], 1)
++    w, v = np.linalg.eigh(np.cov(pts.T) if len(pts) > 2 else np.eye(2))
++    axis = v[:, 1]
++    u = pts @ axis; n = pts @ np.array([-axis[1], axis[0]])
++    mid = np.array([(u.max() + u.min()) / 2, (n.max() + n.min()) / 2])
++    centre = c + mid[0] * axis + mid[1] * np.array([-axis[1], axis[0]])
++    yaw = np.degrees(np.arctan2(axis[1], axis[0]))
++    return centre, (u.max() - u.min()) / 2, (n.max() - n.min()) / 2, yaw, axis
++
++
++def main():
++    ap = argparse.ArgumentParser()
++    ap.add_argument("npz"); ap.add_argument("out")
++    ap.add_argument("--outline", type=float, nargs="+", required=True)
++    a = ap.parse_args()
++    d = np.load(a.npz); h, xs, zs = d["h"], d["xs"], d["zs"]
++    step = float(xs[1] - xs[0])
++    X, Z = np.meshgrid(xs, zs)
++    poly = np.array(list(zip(a.outline[0::2], a.outline[1::2])))
++    inside = Path(poly).contains_points(np.stack([X.ravel(), Z.ravel()], 1)).reshape(h.shape)
++    filled = np.where(np.isfinite(h), h, np.nanmedian(h))
++    size = int(round(8 / step)) | 1
++    ground_hi = ndimage.grey_opening(filled, size=(size, size))   # ground under raised things
++    ground_lo = ndimage.grey_closing(filled, size=(size, size))   # ground over dips
++    raised = (filled - ground_hi > 0.12) & inside
++    dip = (ground_lo - filled > 0.4) & inside
++    gz, gx = np.gradient(filled, step)
++    slope = np.degrees(np.arctan(np.hypot(gx, gz)))
++    feats = []
++    for kind, mask, rel in (("raised", raised, filled - ground_hi), ("dip", dip, ground_lo - filled)):
++        mask = ndimage.binary_opening(mask, iterations=1) if kind == "dip" else mask
++        lab, n = ndimage.label(mask, structure=np.ones((3, 3)))
++        for k in range(1, n + 1):
++            sel = lab == k
++            area = sel.sum() * step * step
++            if area < (0.6 if kind == "raised" else 6.0):
++                continue
++            centre, hl, hw, yaw, axis = footprint(X[sel], Z[sel])
++            feats.append(dict(kind=kind, centre=[round(float(centre[0]), 2), round(float(np.nanmedian(h[sel])), 2), round(float(centre[1]), 2)],
++                              length=round(2 * hl, 2), width=round(2 * hw, 2), yaw=round(float(yaw), 1), area=round(float(area), 1),
++                              rel_height=round(float(np.percentile(rel[sel], 95)), 2), top=round(float(np.nanmax(h[sel])), 2),
++                              floor=round(float(np.nanmin(h[sel])), 2), max_slope=round(float(np.percentile(slope[sel], 95)), 1),
++                              fill=round(float(area / max(4 * hl * hw, 1e-6)), 2)))
++    feats.sort(key=lambda f: -f["area"])
++    for i, f in enumerate(feats):
++        f["id"] = f"{f['kind'][0]}{i:02d}"
++    json.dump(feats, open(a.out + "-features.json", "w"), indent=1)
++    fig, ax = plt.subplots(figsize=(13, 11), dpi=110)
++    ax.imshow(np.where(inside, filled, np.nan), origin="lower", extent=(xs[0], xs[-1], zs[0], zs[-1]), cmap="gray")
++    ax.invert_yaxis()
++    ax.add_patch(Polygon(poly, closed=True, fill=False, ec="red", lw=1.5, ls="--"))
++    for f in feats:
++        c = np.array([f["centre"][0], f["centre"][2]]); t = np.radians(f["yaw"])
++        u = np.array([np.cos(t), np.sin(t)]); n = np.array([-u[1], u[0]])
++        hl, hw = f["length"] / 2, f["width"] / 2
++        box = [c + su * hl * u + sn * hw * n for su, sn in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
++        ax.add_patch(Polygon(box, closed=True, fill=False, ec="cyan" if f["kind"] == "raised" else "orange", lw=1))
++        ax.text(c[0], c[1], f["id"], fontsize=7, color="yellow", ha="center", va="center")
++    ax.set_title("features found (cyan raised, orange dips)")
++    fig.tight_layout(); fig.savefig(a.out + "-features.png")
++    for f in feats:
++        print(f"{f['id']} {f['kind']:6} c=({f['centre'][0]:.1f},{f['centre'][1]:.2f},{f['centre'][2]:.1f}) L={f['length']:.1f} W={f['width']:.1f} "
++              f"yaw={f['yaw']:.0f} area={f['area']:.0f} rel={f['rel_height']:.2f} slope={f['max_slope']:.0f} fill={f['fill']}")
++
++
++if __name__ == "__main__":
++    main()
 diff --git a/Extension/Domination/tools/make_builtin.py b/Extension/Domination/tools/make_builtin.py
 new file mode 100644
 index 0000000..7e90728
@@ -6270,6 +7765,155 @@ index 0000000..7e90728
 +"""
 +    open(out, "w", encoding="utf-8", newline="\n").write(text)
 +    print("wrote", out, "with", len(parts), "park(s)")
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/Extension/Domination/tools/make_pack.py b/Extension/Domination/tools/make_pack.py
+new file mode 100644
+index 0000000..b2ad7b3
+--- /dev/null
++++ b/Extension/Domination/tools/make_pack.py
+@@ -0,0 +1,143 @@
++"""Packages Domination parks as a mod: a park pack, ready for Thunderstore and the launcher's MODS page.
++
++usage: python -I make_pack.py <out folder> <name> <version> "<description>" <park.json>... [--author <name>] [--website <url>]
++
++Writes <out folder>/<name>-<version>.zip holding:
++  manifest.json        Thunderstore's: name, version_number, website_url, description, dependencies
++  README.md            the parks, the maps they need, and how to play them
++  icon.png             256 x 256: the parks' spots seen from above
++  domination/<id>.json the park files, as they are
++A park pack ships no game data, so it loads on any game build. With it switched on in the launcher,
++its parks are in the DOMINATION tab's Map and Park dropdowns. A park file overrides a built-in park
++of the same id, so a pack can also update a built-in park without a new ReSkate.
++<name>: letters, digits and _ (Thunderstore's rule). <version>: major.minor.patch.
++Needs Pillow (pip install pillow).
++"""
++import io, json, math, os, re, sys, zipfile
++from PIL import Image, ImageDraw, ImageFont
++
++PALETTE = [(94, 205, 250), (255, 177, 11), (240, 72, 64), (46, 184, 92), (176, 120, 255), (255, 120, 190), (245, 245, 245)]
++
++
++def footprint(spot):
++    """A spot's outline (x, z) points: its polygon, or a capsule's two half circles."""
++    if spot.get("shape") == "capsule" or "a" in spot:
++        (ax, az), (bx, bz), r = spot["a"], spot["b"], float(spot.get("radius", spot.get("r", 1)))
++        dx, dz = bx - ax, bz - az
++        length = math.hypot(dx, dz) or 1.0
++        nx, nz = -dz / length, dx / length
++        start = math.atan2(nz, nx)
++        arc = lambda cx, cz, s: [(cx + r * math.cos(s + math.pi * i / 8), cz + r * math.sin(s + math.pi * i / 8)) for i in range(9)]
++        return arc(bx, bz, start - math.pi) + arc(ax, az, start)
++    return [tuple(p) for p in spot["points"]]
++
++
++def draw_park(draw, park, box):
++    """The park's spots in a box (x0, y0, x1, y1), north up, each in a colour of the palette."""
++    shapes = [footprint(s) for s in park["spots"]]
++    xs = [x for shape in shapes for x, _ in shape]
++    zs = [z for shape in shapes for _, z in shape]
++    x0, y0, x1, y1 = box
++    scale = min((x1 - x0) / max(max(xs) - min(xs), 1), (y1 - y0) / max(max(zs) - min(zs), 1)) * 0.9
++    cx, cz = (max(xs) + min(xs)) / 2, (max(zs) + min(zs)) / 2
++    for i, shape in enumerate(shapes):
++        points = [((x0 + x1) / 2 + (x - cx) * scale, (y0 + y1) / 2 - (z - cz) * scale) for x, z in shape]
++        draw.polygon(points, fill=PALETTE[i % len(PALETTE)] + (235,), outline=(20, 20, 20, 255))
++
++
++def font(size):
++    for name in ("arialbd.ttf", "DejaVuSans-Bold.ttf"):
++        try:
++            return ImageFont.truetype(name, size)
++        except OSError:
++            pass
++    return ImageFont.load_default()
++
++
++def icon(parks):
++    im = Image.new("RGBA", (256, 256), (26, 26, 26, 255))
++    draw = ImageDraw.Draw(im, "RGBA")
++    draw.polygon([(0, 8), (256, 0), (256, 50), (0, 58)], fill=(255, 177, 11, 255))  # skate.'s slanted band
++    draw.text((128, 30), "DOMINATION", font=font(30), fill=(20, 20, 20, 255), anchor="mm")
++    cols = 1 if len(parks) == 1 else 2 if len(parks) <= 4 else 3
++    rows = math.ceil(len(parks) / cols)
++    cell_w, cell_h = 248 / cols, 190 / rows
++    for n, park in enumerate(parks):
++        c, r = n % cols, n // cols
++        draw_park(draw, park, (4 + c * cell_w + 4, 62 + r * cell_h + 4, 4 + (c + 1) * cell_w - 4, 62 + (r + 1) * cell_h - 4))
++    return im
++
++
++def readme(name, version, description, parks):
++    maps = {}
++    for p in parks:
++        maps.setdefault(p.get("map") or p["level"].split("/")[-1], []).append(p)
++    lines = [f"# {name.replace('_', ' ')}", "", description, "", "## Parks", ""]
++    for p in parks:
++        lines.append(f"- **{p['park']}** ({len(p['spots'])} spots) on {p.get('map') or p['level']}")
++    lines += ["", "## Maps they need", ""]
++    for m, ps in maps.items():
++        package = ps[0].get("package", "")
++        lines.append(f"- **{m}**: " + (f"the map mod `{package}` (install it from the MODS page too)" if package else "comes with the game"))
++    lines += [
++        "",
++        "## Playing",
++        "",
++        "Needs ReSkate with Domination. Switch this mod on in the launcher's MODS page, then in game:",
++        "pause menu > Multiplayer > DOMINATION, pick the map and the park, and Start round.",
++        "Everyone in a round needs the same version of this pack.",
++        "",
++        "A park here overrides a built-in park with the same id, so this pack can update one without a new ReSkate.",
++        "",
++        f"Version {version}.",
++        "",
++    ]
++    return "\n".join(lines)
++
++
++def main():
++    args = sys.argv[1:]
++    options = {}
++    for flag in ("--author", "--website"):
++        if flag in args:
++            i = args.index(flag)
++            options[flag] = args[i + 1]
++            del args[i:i + 2]
++    if len(args) < 5:
++        sys.exit(__doc__)
++    out, name, version, description, files = args[0], args[1], args[2], args[3], args[4:]
++    if not re.fullmatch(r"[A-Za-z0-9_]+", name):
++        sys.exit("the name may hold only letters, digits and _")
++    if not re.fullmatch(r"\d+\.\d+\.\d+", version):
++        sys.exit("the version must be major.minor.patch")
++    if len(description) > 250:
++        sys.exit("Thunderstore descriptions are at most 250 characters")
++    parks, ids = [], []
++    for path in files:
++        park = json.load(open(path, encoding="utf-8"))
++        for key in ("level", "park", "spots"):
++            if key not in park:
++                sys.exit(f"{path}: not a park file (no {key})")
++        pid = os.path.splitext(os.path.basename(path))[0]
++        if pid in ids:
++            sys.exit(f"{pid}: two parks with the same id")
++        parks.append(park)
++        ids.append(pid)
++    manifest = {"name": name, "version_number": version, "website_url": options.get("--website", ""), "description": description, "dependencies": []}
++    if "--author" in options:
++        manifest["author"] = options["--author"]  # (Thunderstore takes the author from the uploading team; ReSkate shows this)
++    os.makedirs(out, exist_ok=True)
++    target = os.path.join(out, f"{name}-{version}.zip")
++    png = io.BytesIO()
++    icon(parks).save(png, "PNG")
++    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as z:
++        z.writestr("manifest.json", json.dumps(manifest, indent=2) + "\n")
++        z.writestr("README.md", readme(name, version, description, parks))
++        z.writestr("icon.png", png.getvalue())
++        for pid, path in zip(ids, files):
++            z.write(path, f"domination/{pid}.json")
++    print(f"wrote {target}: {len(parks)} park(s)")
 +
 +
 +if __name__ == "__main__":
@@ -6451,6 +8095,112 @@ index 0000000..f6f2cf2
 +    if problems:
 +        print("PROBLEMS:"); [print("  " + p) for p in problems]; sys.exit(1)
 +    print("ok:", len(spots), "spots, no overlaps")
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/Extension/Domination/tools/render_scan.py b/Extension/Domination/tools/render_scan.py
+new file mode 100644
+index 0000000..1353d08
+--- /dev/null
++++ b/Extension/Domination/tools/render_scan.py
+@@ -0,0 +1,100 @@
++"""Render a `domination scan` height map (scan-*.bin) as top-down pictures.
++
++usage: python -I render_scan.py <scan.bin> <out_prefix> [--crop x0 z0 x1 z1] [--park park.json]
++
++Writes <out_prefix>-height.png (height colours over hillshade, 10 m grid, game x right, game z down)
++and <out_prefix>-slope.png (surface slope: flat dark, walls bright), plus <out_prefix>.npz.
++With --park, the spots of a park file are drawn on both.
++"""
++import argparse, json, struct
++import numpy as np
++import matplotlib
++matplotlib.use("Agg")
++import matplotlib.pyplot as plt
++from matplotlib.colors import LightSource
++from matplotlib.patches import Polygon, Circle
++
++
++def load(path):
++    with open(path, "rb") as f:
++        data = f.read()
++    assert data[:8] == b"DOMSCAN1", "not a domination scan"
++    nx, nz = struct.unpack_from("<II", data, 8)
++    x0, z0, step, top, bottom = struct.unpack_from("<5f", data, 16)
++    h = np.frombuffer(data, dtype="<f4", count=nx * nz, offset=36).reshape(nz, nx).astype(np.float64)
++    return h, x0, z0, step
++
++
++def spot_outline(s):
++    if s["shape"] == "box":
++        cx, _, cz = s["centre"]; hx, _, hz = s["half"]; a = np.radians(s.get("yaw", 0.0))
++        c, si = np.cos(a), np.sin(a)
++        pts = [(-hx, -hz), (hx, -hz), (hx, hz), (-hx, hz)]
++        return [(cx + px * c - pz * si, cz + px * si + pz * c) for px, pz in pts]
++    ax, _, az = s["a"]; bx, _, bz = s["b"]; r = s["radius"]
++    d = np.array([bx - ax, bz - az]); n = d / (np.linalg.norm(d) or 1); p = np.array([-n[1], n[0]]) * r
++    return [tuple(np.array([ax, az]) + p), tuple(np.array([bx, bz]) + p), tuple(np.array([bx, bz]) - p), tuple(np.array([ax, az]) - p)]
++
++
++def draw_park(ax, park):
++    for s in park["spots"]:
++        ax.add_patch(Polygon(spot_outline(s), closed=True, fill=False, ec="red", lw=1.2))
++        mx, _, mz = s["marker"]
++        ax.text(mx, mz, s["id"], color="white", fontsize=6, ha="center", va="center",
++                bbox=dict(boxstyle="round,pad=0.15", fc="black", alpha=0.6, lw=0))
++
++
++def main():
++    ap = argparse.ArgumentParser()
++    ap.add_argument("scan"); ap.add_argument("out")
++    ap.add_argument("--crop", type=float, nargs=4)
++    ap.add_argument("--park")
++    ap.add_argument("--outline", type=float, nargs="+", help="x z pairs of a polygon to draw (the park's edge)")
++    a = ap.parse_args()
++    h, x0, z0, step = load(a.scan)
++    nz, nx = h.shape
++    xs = x0 + np.arange(nx) * step; zs = z0 + np.arange(nz) * step
++    if a.crop:
++        cx0, cz0, cx1, cz1 = a.crop
++        i0, i1 = np.searchsorted(xs, min(cx0, cx1)), np.searchsorted(xs, max(cx0, cx1))
++        j0, j1 = np.searchsorted(zs, min(cz0, cz1)), np.searchsorted(zs, max(cz0, cz1))
++        h, xs, zs = h[j0:j1, i0:i1], xs[i0:i1], zs[j0:j1]
++    np.savez_compressed(a.out + ".npz", h=h, xs=xs, zs=zs)
++    miss = ~np.isfinite(h)
++    filled = np.where(miss, np.nanmin(h), h)
++    gz, gx = np.gradient(filled, step)
++    slope = np.degrees(np.arctan(np.hypot(gx, gz)))
++    extent = (xs[0] - step / 2, xs[-1] + step / 2, zs[0] - step / 2, zs[-1] + step / 2)
++    lo, hi = np.nanpercentile(h, 1), np.nanpercentile(h, 99.5)
++    park = json.load(open(a.park)) if a.park else None
++
++    ls = LightSource(azdeg=315, altdeg=45)
++    rgb = ls.shade(np.clip(filled, lo, hi), cmap=plt.cm.terrain, vert_exag=2, dx=step, dy=step, blend_mode="soft",
++                   vmin=lo, vmax=hi)
++    rgb[miss] = (1, 0, 1, 1)
++    w = 14
++    for name, image, kw in (("height", rgb, {}), ("slope", np.clip(slope, 0, 90), {"cmap": "magma", "vmin": 0, "vmax": 90})):
++        fig, ax = plt.subplots(figsize=(w, w * (extent[3] - extent[2]) / (extent[1] - extent[0]) + 0.6), dpi=110)
++        im = ax.imshow(image, origin="lower", extent=extent, interpolation="nearest", **kw)
++        if name == "height":
++            sm = plt.cm.ScalarMappable(cmap=plt.cm.terrain, norm=plt.Normalize(lo, hi))
++            fig.colorbar(sm, ax=ax, fraction=0.03, label="height (m)")
++        else:
++            fig.colorbar(im, ax=ax, fraction=0.03, label="slope (deg)")
++        ax.set_xticks(np.arange(np.ceil(extent[0] / 10) * 10, extent[1], 10))
++        ax.set_yticks(np.arange(np.ceil(extent[2] / 10) * 10, extent[3], 10))
++        ax.tick_params(labelsize=6); ax.grid(color="black", alpha=0.25, lw=0.5)
++        # Seen from above: game x right and game z down (Blender's top view), so not mirrored.
++        ax.invert_yaxis()
++        ax.set_xlabel("game x (m)"); ax.set_ylabel("game z (m), increasing downward")
++        ax.set_title(f"{name}: {a.scan.split(chr(92))[-1]}  step {step:g} m  misses {int(miss.sum())}")
++        if park: draw_park(ax, park)
++        if a.outline:
++            pts = list(zip(a.outline[0::2], a.outline[1::2]))
++            ax.add_patch(Polygon(pts, closed=True, fill=False, ec="red", lw=2.5, ls="--"))
++        fig.tight_layout(); fig.savefig(f"{a.out}-{name}.png"); plt.close(fig)
++    print("points", h.size, "misses", int(miss.sum()), "height", round(float(np.nanmin(h)), 2), round(float(np.nanmax(h)), 2))
 +
 +
 +if __name__ == "__main__":
@@ -6663,10 +8413,10 @@ index 45cc317..ea68140 100644
          record("{\"event\":\"hall_of_meat_initialized\",\"active\":" + std::string(meat ? "true" : "false") + "}");
          const bool rash = dingosdk::road_rash::start(r.base);
 diff --git a/cmake/Runtime.cmake b/cmake/Runtime.cmake
-index 5c6c910..94388d9 100644
+index 5c6c910..6b4920b 100644
 --- a/cmake/Runtime.cmake
 +++ b/cmake/Runtime.cmake
-@@ -150,6 +150,14 @@ add_library(dingosdk_runtime SHARED
+@@ -150,6 +150,15 @@ add_library(dingosdk_runtime SHARED
      Extension/Skater/physics_tuning.cpp
      Extension/Multiplayer/Remote/remote_collision.cpp
      Extension/Skater/physics_tuning_model.cpp
@@ -6676,12 +8426,13 @@ index 5c6c910..94388d9 100644
 +    Extension/Domination/domination_model.cpp
 +    Extension/Domination/domination_files.cpp
 +    Extension/Domination/domination_hud.cpp
++    Extension/Domination/domination_tools.cpp
 +    Extension/Domination/domination_sync.cpp
 +    Extension/Domination/domination_wire.cpp
      Extension/HallOfMeat/hall_of_meat.cpp
      Extension/HallOfMeat/hall_of_meat_card.cpp
      Extension/HallOfMeat/hall_of_meat_commands.cpp
-@@ -284,6 +292,11 @@ endif()
+@@ -284,6 +293,11 @@ endif()
  dingosdk_version_info(dingosdk_runtime "ReSkate mod runtime" "ReSkate.dll" VFT_DLL)
  target_include_directories(dingosdk_runtime SYSTEM PRIVATE "${PROJECT_SOURCE_DIR}/External/steam_networking")
  target_link_libraries(dingosdk_runtime PRIVATE dingosdk_lz4 dingosdk_zstd)

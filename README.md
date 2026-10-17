@@ -8,6 +8,7 @@ Not code to merge: the material behind the draft pull requests for **Domination*
 - [patches/](patches/): each change as a `git am` patch against `main` (`20d58a4`), and the same against `v2.0.7` in `patches/for-2.0.7/`.
   - `1-domination/` and `2-custom-multiplayer/` are the two pull requests.
   - `3-server-stats/` (dedicated servers counting what is played on them) is ready but not opened as a pull request yet.
+- [packs/](packs/): the ten built-in parks as two park-pack mods (`Domination_Parks_San_Vansterdam`, `Domination_Parks_Skate_3_Improved`), ready for Thunderstore. Made with `Extension/Domination/tools/make_pack.py`.
 - `pr-*.md`: the pull request texts as written.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)

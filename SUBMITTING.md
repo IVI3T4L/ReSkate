@@ -104,6 +104,7 @@ Use `-3`: once one of the two is in `main`, the other's patch touches lines next
   - smaller layout points.
 - **Play counts (1):** a round with practice bots and a solo round counted (`domination stats`: 1 with others, 2 in all, Skate 3 Improved 2, Red-bowl park 2), and the counts were still there after a restart.
 - **Server play stats (3):** unit tests (`server_stats`), and the server's other tests pass; built on `main` and `v2.0.7`, alone and with 1 and 2. A full build found two server tests that build the whole host without the new file; fixed.
+- **Park-making and packs (1):** in a test copy, `domination tp` then `domination scan` hit all 961 points; `render_scan.py` drew it; `build_park.py` rebuilt Sunken banks from its spec to the shipped file exactly; `make_builtin.py` regenerates `domination_parks.h` byte for byte from `parks/`; the San Vansterdam pack, unzipped into `Mods`, loaded and its (edited) park replaced the built-in one; a pack switched off in the launcher's mod list loads nothing.
 - **Rebased on `main` `20d58a4`** (29 commits after the first base): all three apply cleanly; a Hillside park round with 3 practice bots agreed on every copy, on Skate 3 Improved 1.1.3 (all 48 Skate 3 spots also checked on 1.1.3: the skater stands on each).
 - **Not tested yet:**
   - between two real players online over Steam (needs two Steam accounts online). The rules are covered by the network simulation and the practice bots, but not played between two real games;
@@ -275,12 +276,12 @@ In the worktree `D:\reskate-dev\ReSkate-upstream`:
 
 | Branch | Commit | What |
 |---|---|---|
-| `pr-domination` | 8d0852c | Pull request 1 |
+| `pr-domination` | dc55f4d | Pull request 1 |
 | `pr-custom-multiplayer` | 25f9c8b | Pull request 2 |
 | `pr-server-stats` | 6483f11 | Pull request 3 |
-| `integration` | 3c74d2b | 1 and 2 merged |
-| `test-build` | 2330f94 | `integration` plus a bot-only launcher change that keeps the test copy offline and isolated, plus Domination's developer tools (practice bots, test claims, park-making commands, the score HUD logger and its replay test). Never submit it. |
-| `pr207-domination`, `pr207-custom-multiplayer`, `pr207-server-stats`, `integration207` | 446f85c, fa2fd32, 069211c, 7923dc0 | The same three on `v2.0.7` (`patches/for-2.0.7/`) |
+| `integration` | c608438 | 1 and 2 merged |
+| `test-build` | 0dd532c | `integration` plus a bot-only launcher change that keeps the test copy offline and isolated, plus Domination's developer tools (practice bots, test claims, park-making commands, the score HUD logger and its replay test). Never submit it. |
+| `pr207-domination`, `pr207-custom-multiplayer`, `pr207-server-stats`, `integration207` | 2b9bc04, fa2fd32, 069211c, f7632fa | The same three on `v2.0.7` (`patches/for-2.0.7/`) |
 
 The developer tools also sit on their own on `domination-devtools`, a test-only branch. They are not part of these patches and are never submitted.
 
