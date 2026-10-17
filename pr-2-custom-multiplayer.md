@@ -2,7 +2,11 @@
 
 A way for ReSkate's own game modes to plug into the pause menu. Each mode gets a tab on the Multiplayer page, after the page's own tabs (SERVER BROWSER, HOST LOBBY, ...), which are otherwise unchanged.
 
-![The DOMINATION tab on the Multiplayer page](pictures/11-multiplayer-tab.jpg)
+| | |
+|---|---|
+| ![The DOMINATION tab, its Park dropdown open](pictures/11-multiplayer-tab.jpg) | ![The Map dropdown](pictures/13-menu-map-dropdown.jpg) |
+
+The DOMINATION tab: a dropdown row lists its choices under it, one full-width row each (left: the parks on this map with their spot counts; right: the maps).
 
 ## What's in it
 

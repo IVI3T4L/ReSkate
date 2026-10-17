@@ -108,7 +108,6 @@ Use `-3`: once one of the two is in `main`, the other's patch touches lines next
 - **Rebased on `main` `364c619`** (two rebases since the first base; the last resolved two conflicts: test options added beside ours in `CMakeLists.txt`, and the Multiplayer page split into `hub_frame`, given its area): all three apply cleanly; a Hillside park round with 3 practice bots agreed on every copy, on Skate 3 Improved 1.1.3 (all 48 Skate 3 spots also checked on 1.1.3: the skater stands on each).
 - **Live, two players:** played online between two PCs (two Steam accounts, ReSkate 2.1 built from these branches, a join-code lobby hosted from the DOMINATION tab): rounds ran for both players.
 - **Not tested yet:**
-  - the Domination tab's Map and Park dropdowns seen by a person (drawn in the tests, not yet pictured);
   - server play stats on a live server with players;
   - the menu sounds on taking or losing a spot (the log can't show them; heard only in play);
   - finding games by mode in the tab's list with a second player (hosting from the tab and joining by code was played).
@@ -268,7 +267,7 @@ In [pictures/](pictures/), all from the test copies (offline, practice bots stan
 | `06-parks-san-vansterdam.jpg`, `07-parks-skate3improved.jpg` | The ten built-in parks from above, spots and starts drawn on a height map |
 | `08-outlines-before-after.jpg` | Spot outlines before and after line-of-sight hiding |
 | `09-spot-check-hillside.jpg`, `10-spot-check-bonski.jpg` | Spot checks in game: a teleport to each spot with its outline and label |
-| `11-multiplayer-tab.jpg` | The DOMINATION tab on the Multiplayer page (an earlier build, during a round: before the Map and Park dropdowns) |
+| `11-multiplayer-tab.jpg`, `13-menu-map-dropdown.jpg` | The DOMINATION tab on the Multiplayer page, its Park and Map dropdowns open |
 | `12-pack-icons.png` | The two park packs' icons, drawn by `make_pack.py` from the parks' spots |
 
 ## Branches (local, not pushed)

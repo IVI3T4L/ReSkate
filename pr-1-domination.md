@@ -30,6 +30,10 @@ skate. 3's Domination, for ReSkate. Own the most spots in a park: the best singl
 | ![Steal and feed](pictures/02-steal-and-feed.jpg) | ![Results](pictures/03-results.jpg) |
 | ![Teams round](pictures/04-teams-round.jpg) | ![Teams results](pictures/05-teams-results.jpg) |
 
+| | |
+|---|---|
+| ![The DOMINATION tab: Park dropdown](pictures/11-multiplayer-tab.jpg) | ![The Map dropdown](pictures/13-menu-map-dropdown.jpg) |
+
 ![San Vansterdam parks](pictures/06-parks-san-vansterdam.jpg)
 ![Skate 3 map mod parks](pictures/07-parks-skate3improved.jpg)
 
