@@ -1,0 +1,33 @@
+# Temporary: builds ReSkate (main@20d58a4 + PR #279 Domination + PR #278 Custom Multiplayer)
+# with Visual Studio 2022 for the Linux/Proton Domination live test. Not for merging.
+name: dom-test-build
+on:
+  push:
+    branches: [ci-dom-test]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake --preset vs2022-x64 -DDINGOSDK_BUILD_DOMINATION_TESTS=ON -DDINGOSDK_BUILD_MULTIPLAYER_TESTS=ON
+      - name: Build
+        run: cmake --build build/vs2022-x64 --config Release --parallel 4
+      - name: Tests
+        run: ctest --test-dir build/vs2022-x64 -C Release -R "domination|multiplayer" --output-on-failure
+      - name: Fuzz
+        run: build/vs2022-x64/Release/dingosdk_domination_net_tests.exe fuzz 1000
+      - name: Hashes
+        shell: pwsh
+        run: |
+          Get-FileHash build/vs2022-x64/Release/ReSkateLauncher.exe, build/vs2022-x64/Release/ReSkate.dll -Algorithm SHA256 | Format-List
+          git rev-parse HEAD
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reskate-domination-${{ github.sha }}
+          path: |
+            build/vs2022-x64/Release/ReSkateLauncher.exe
+            build/vs2022-x64/Release/ReSkate.dll
+          if-no-files-found: error
