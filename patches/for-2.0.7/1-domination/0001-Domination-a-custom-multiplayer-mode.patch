@@ -1,4 +1,4 @@
-From 2b9bc043cc3fd61a4e986b297d3985bc1918ecd4 Mon Sep 17 00:00:00 2001
+From ab6527611a348a03c2852e3afb3991bac1aefa07 Mon Sep 17 00:00:00 2001
 From: IVI <breakthroughsecurity@gmail.com>
 Date: Sat, 17 Oct 2026 13:26:11 -0400
 Subject: [PATCH] Domination: a custom multiplayer mode
@@ -96,7 +96,7 @@ change it safely.
 - teleport_local_skater_heading: a teleport facing a heading.
 - Tests: DINGOSDK_BUILD_DOMINATION_TESTS (ctest -R domination).
 
-Not yet tried between two real players.
+Played online between two players on two PCs (2.1, a join-code lobby).
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 ---

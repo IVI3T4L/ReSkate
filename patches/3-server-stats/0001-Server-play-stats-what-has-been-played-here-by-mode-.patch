@@ -1,4 +1,4 @@
-From 6483f1186fdaac6fe61a0abd36175aee3d7676ff Mon Sep 17 00:00:00 2001
+From c0d63fbf40d69441daf4fa8d8ee742980d120c60 Mon Sep 17 00:00:00 2001
 From: IVI <breakthroughsecurity@gmail.com>
 Date: Fri, 16 Oct 2026 22:23:15 -0400
 Subject: [PATCH] Server: play stats (what has been played here, by mode and
@@ -44,7 +44,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
  create mode 100644 Server/server_stats.h
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index b6b222d..c54412d 100644
+index 30164a3..a27361f 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -89,6 +89,11 @@ if(DINGOSDK_BUILD_MULTIPLAYER_TESTS)

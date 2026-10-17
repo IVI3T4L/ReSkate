@@ -27,10 +27,12 @@ No mode is in this change. Until one registers, the Multiplayer page looks as be
 - **Unit tests:** server tags and lobby data with a mode (`multiplayer_protocol`, `multiplayer_lobbies`).
 - **Tab order:** the pause menu's tab order is checked (`native_menu_browser`).
 - **In game:** with Domination plugged in (#1), offline.
+- **Live:** a Domination game hosted from the tab (join code only) on one PC, joined from another with its code; the round ran for both. Finding games in the tab's list hasn't been tried with a second player yet.
 
 ## For reviewers and agents
 
 - **Independent:** this works alone, and merges cleanly with "Domination" (#1) in either order.
+- **On 2.0.7 too:** the same change against `v2.0.7` is on the notes branch (`patches/for-2.0.7/`), with a ready branch on the fork (`custom-multiplayer-2.0.7`).
 - **Applying:** `AGENT-GUIDE.md` lists every line this adds to existing files.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)

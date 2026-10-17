@@ -1,4 +1,4 @@
-From 25f9c8b543f74ad48bd2dd8c4e1abcec5093a1f9 Mon Sep 17 00:00:00 2001
+From e7414f1be9350c4627e79bd407d716bf0210c42a Mon Sep 17 00:00:00 2001
 From: IVI <breakthroughsecurity@gmail.com>
 Date: Fri, 16 Oct 2026 19:28:47 -0400
 Subject: [PATCH] Custom Multiplayer: ReSkate's own multiplayer modes as tabs
@@ -97,25 +97,25 @@ index cf5c151..13955a4 100644
      std::string object_status;
      MultiplayerClientTiming client_timing;
 diff --git a/Extension/Console/commands.cpp b/Extension/Console/commands.cpp
-index 5cf3ad2..6abc4c3 100644
+index b449231..b842699 100644
 --- a/Extension/Console/commands.cpp
 +++ b/Extension/Console/commands.cpp
-@@ -232,6 +232,7 @@ const Commands &game_commands() {
-         register_road_rash_commands(*result);
+@@ -233,6 +233,7 @@ const Commands &game_commands() {
          register_board_break_commands(*result);
          register_grind_exit_commands(*result);
+         register_replay_keyframes_commands(*result);
 +        register_custom_modes_commands(*result);
          return result;
      }();
      return *registry;
 diff --git a/Extension/Console/commands.h b/Extension/Console/commands.h
-index 0caee4c..36e8d83 100644
+index 828ecd1..8d5fc5e 100644
 --- a/Extension/Console/commands.h
 +++ b/Extension/Console/commands.h
-@@ -30,6 +30,7 @@ void register_hall_of_meat_commands(Commands &);
- void register_road_rash_commands(Commands &);
+@@ -31,6 +31,7 @@ void register_road_rash_commands(Commands &);
  void register_board_break_commands(Commands &);
  void register_grind_exit_commands(Commands &);
+ void register_replay_keyframes_commands(Commands &);
 +void register_custom_modes_commands(Commands &);
  // Runtime adapters. Invoked only by the verified game-thread dispatcher.
  void request_debug(overlay::DebugAction, bool enabled = false, float value = 0);
@@ -799,10 +799,10 @@ index 8c0dd7b..0799127 100644
      if (offline && missing.empty()) return;
      // Prepare both pages before exposing either. Their initial insertion is
 diff --git a/Extension/UI/Overlay/hub_page.cpp b/Extension/UI/Overlay/hub_page.cpp
-index 6aefeeb..d6480c9 100644
+index 34af2c8..3f9e0cb 100644
 --- a/Extension/UI/Overlay/hub_page.cpp
 +++ b/Extension/UI/Overlay/hub_page.cpp
-@@ -105,6 +105,12 @@ struct Hub {
+@@ -109,6 +109,12 @@ struct Hub {
      // Mod Options: the same rows and actions the page has always had (native_tools_view.h).
      native_tools::State tools;
      int tools_tab{};
@@ -815,15 +815,15 @@ index 6aefeeb..d6480c9 100644
      // Recording a bind (the BINDS tab): which action (0: none), what has been pressed so far,
      // and when it gives up (GetTickCount64).
      int recording_bind{};
-@@ -156,6 +162,7 @@ struct Hub {
+@@ -160,6 +166,7 @@ struct Hub {
      bool join_seen{}, join_fetching{}, join_cancelled{};
      ULONGLONG join_asked{};
      std::string failed, failed_name; // why the last join did not get in, and where to; empty: nothing to say
 +    int section_before = -1;          // the page drawn last (a join's failure is said on the page it was made from)
      ULONGLONG notice_until{};
- };
- Hub &hub() {
-@@ -977,7 +984,10 @@ struct Column {
+     // The frame the ReSkate menu last drew these pages itself (draw_online_embedded).
+     int embedded_frame{-10};
+@@ -983,7 +990,10 @@ struct Column {
          : ui(owner), list(owner, id, a, b), left(a.x), right(b.x - 26 * owner.u), tall(96 * owner.u), between(10 * owner.u) {}
      // A row that is pressed: a switch, a choice that goes round, or an action (no value).
      bool setting(const std::string &name, const std::string &value, bool enabled, Look look = Look::tile) {
@@ -835,7 +835,7 @@ index 6aefeeb..d6480c9 100644
          bool drawn{};
          const float top = list.next(tall, between, drawn);
          list.reveal(id, top, tall);
-@@ -1023,6 +1033,134 @@ struct Column {
+@@ -1029,6 +1039,134 @@ struct Column {
      void end() { list.end(); }
  };
  
@@ -970,10 +970,10 @@ index 6aefeeb..d6480c9 100644
  // The page's tabs. What a control does, and when it can, is the same as on ReSkate's own menu
  // (native_tools_view.h for travel, parks and the world; the same requests and commands that
  // menu sends for the rest); how it is laid out is here.
-@@ -1570,20 +1708,39 @@ void draw_hub_page() {
-     const ImVec2 a(page_left, (body_top + lower) * u);
-     const ImVec2 z(std::min(page_right, a.x + body_most * u), (down - (layout_height - body_bottom) - lower) * u);
-     const bool tools = h.page.section == 1;
+@@ -1614,21 +1752,40 @@ void hub_frame(Hub &h, ImDrawList *draw, float u, ImVec2 a, ImVec2 z, float tabs
+ 
+     // ---- the page's tabs
+     const bool tools = !embedded && h.page.section == 1;
 +    // Another page: a join that failed on the one before is not this page's to say.
 +    if (h.page.section != h.section_before) {
 +        if (h.section_before >= 0) h.failed.clear(), h.failed_name.clear();
@@ -989,7 +989,8 @@ index 6aefeeb..d6480c9 100644
          int &open = tools ? h.tools_tab : multiplayer_tab;
 +        std::vector<std::string> mode_names; // (the tabs point into these)
          if (tools) {
-             tabs = {{official_tab, "OFFICIAL MAPS"}, {custom_tab, "CUSTOM MAPS"}, {world_tab, "WORLD"}, {parks_tab, "PARKS"},
+             if (h.tools_tab == custom_tab) h.tools_tab = official_tab;
+             tabs = {{official_tab, "MAPS"}, {world_tab, "WORLD"}, {parks_tab, "PARKS"},
                      {player_tab, "PLAYER"}, {online_tab, "ONLINE"}, {visuals_tab, "VISUALS"}, {binds_tab, "BINDS"}};
          } else {
 -            tabs = {{static_cast<int>(Tab::browser), "SERVER BROWSER"}, {static_cast<int>(Tab::host), "HOST LOBBY"}};
@@ -1016,12 +1017,12 @@ index 6aefeeb..d6480c9 100644
          }
          if (previous_tab || next_tab) {
              std::size_t at = 0;
-@@ -1595,7 +1752,19 @@ void draw_hub_page() {
+@@ -1640,7 +1797,19 @@ void hub_frame(Hub &h, ImDrawList *draw, float u, ImVec2 a, ImVec2 z, float tabs
              h.sound = sound_tab;
              set_typing(h, 0);
          }
--        const float top = (tabs_top + lower) * u, bottom = top + tabs_height * u, size = 44 * u;
-+        const float top = (tabs_top + lower) * u, bottom = top + tabs_height * u;
+-        const float top = tabs_y, bottom = top + tabs_height * u, size = 44 * u;
++        const float top = tabs_y, bottom = top + tabs_height * u;
 +        float size = 44 * u, pad = 56 * u, gap = 20 * u;
 +        {
 +            // More tabs than the page is wide (Mod Options, or many modes): all of them
@@ -1037,7 +1038,7 @@ index 6aefeeb..d6480c9 100644
          float x = a.x;
          const auto cap = [&](std::uint32_t pad_button, const char *key) {
              const auto name = ui.pad.available ? controller_combo_label(pad_button, ui.pad.style) : std::string(key);
-@@ -1603,19 +1772,22 @@ void draw_hub_page() {
+@@ -1648,19 +1817,22 @@ void hub_frame(Hub &h, ImDrawList *draw, float u, ImVec2 a, ImVec2 z, float tabs
          };
          cap(0x10000, "Z");
          for (const auto &[tab, name] : tabs) {
@@ -1064,7 +1065,7 @@ index 6aefeeb..d6480c9 100644
      }
  
      // Under the connecting card the page is still drawn, to look at and not to use.
-@@ -1623,6 +1795,7 @@ void draw_hub_page() {
+@@ -1668,6 +1840,7 @@ void hub_frame(Hub &h, ImDrawList *draw, float u, ImVec2 a, ImVec2 z, float tabs
      const bool failed = !connecting && !h.failed.empty() && !in_session;
      if ((connecting || failed) && !tools) ui.input = ui.clicked = ui.doubled = false;
      if (tools) tools_page(ui, a, z);
@@ -1073,18 +1074,18 @@ index 6aefeeb..d6480c9 100644
      case Tab::browser: browser_page(ui, a, z); break;
      case Tab::host: host_page(ui, a, z); break;
 diff --git a/Extension/UI/Overlay/overlay.h b/Extension/UI/Overlay/overlay.h
-index 788e1c4..dc7cfc2 100644
+index 2cbbb17..dc5967c 100644
 --- a/Extension/UI/Overlay/overlay.h
 +++ b/Extension/UI/Overlay/overlay.h
-@@ -18,6 +18,7 @@
- #include <array>
+@@ -19,6 +19,7 @@
+ #include <atomic>
  #include <cstddef>
  #include <cstdint>
 +#include "Extension/CustomModes/custom_modes.h"
  #include <string>
  #include <vector>
  
-@@ -222,6 +223,13 @@ struct HallOfMeatModel {
+@@ -223,6 +224,13 @@ struct HallOfMeatModel {
      bool available = false, enabled = false;
  };
  
@@ -1098,7 +1099,7 @@ index 788e1c4..dc7cfc2 100644
  // Road Rash's switches (Extension/RoadRash/road_rash.h): started, switched on, and whether its
  // worst wounds bleed.
  struct RoadRashModel {
-@@ -269,6 +277,7 @@ struct Model {
+@@ -279,6 +287,7 @@ struct Model {
      ProgressionModel progression;
      PlayerCardModel player_card;
      HallOfMeatModel hall_of_meat;
@@ -1106,7 +1107,7 @@ index 788e1c4..dc7cfc2 100644
      RoadRashModel road_rash;
      BoardBreakModel board_break;
      GrindExitModel grind_exit;
-@@ -371,7 +380,7 @@ void set_chat_feed(ChatFeed) noexcept;
+@@ -392,7 +401,7 @@ void set_chat_feed(ChatFeed) noexcept;
  // (thread-safe, cheap).
  struct HubPage {
      bool visible{};
@@ -1116,7 +1117,7 @@ index 788e1c4..dc7cfc2 100644
  using HubPageFeed = HubPage (*)();
  void set_hub_page_feed(HubPageFeed) noexcept;
 diff --git a/Runtime/client_tick.cpp b/Runtime/client_tick.cpp
-index 556d831..2bea19a 100644
+index 241a2f2..c737e9c 100644
 --- a/Runtime/client_tick.cpp
 +++ b/Runtime/client_tick.cpp
 @@ -17,6 +17,7 @@
@@ -1126,8 +1127,8 @@ index 556d831..2bea19a 100644
 +#include "Extension/CustomModes/custom_modes.h"
  #include "Extension/BoardBreak/board_break.h"
  #include "Extension/BoardBreak/board_break_audio.h"
- #include "Extension/Skater/grind_exit_control.h"
-@@ -876,6 +877,7 @@ void update_model(std::uintptr_t client, TickState& frame) {
+ #include "Extension/ReplayKeyframes/replay_keyframes.h"
+@@ -882,6 +883,7 @@ void update_model(std::uintptr_t client, TickState& frame) {
      dingosdk::drone::outfit::on_client_tick();
      dingosdk::board_break::on_client_tick(client);
      dingosdk::grind_exit_control::on_client_tick(client);
@@ -1135,7 +1136,7 @@ index 556d831..2bea19a 100644
      if (!has_request && now < r.next_model && state == r.previous_state) return;
      r.next_model = now + 500;
      DINGO_PROFILE_ZONE("tick/update_model/world model (500 ms)");
-@@ -1014,6 +1016,7 @@ void update_model(std::uintptr_t client, TickState& frame) {
+@@ -1020,6 +1022,7 @@ void update_model(std::uintptr_t client, TickState& frame) {
      model.progression = dingosdk::local_profile_progression();
      model.player_card = dingosdk::local_profile_player_card();
      model.hall_of_meat = {dingosdk::hall_of_meat::available(), dingosdk::hall_of_meat::enabled()};
@@ -1237,10 +1238,10 @@ index 27220f0..c5dc732 100644
  std::string server_tags(const Advertisement &);
  
 diff --git a/cmake/Runtime.cmake b/cmake/Runtime.cmake
-index 5c6c910..cbd2471 100644
+index 6ffc39b..c29ad2e 100644
 --- a/cmake/Runtime.cmake
 +++ b/cmake/Runtime.cmake
-@@ -161,6 +161,8 @@ add_library(dingosdk_runtime SHARED
+@@ -166,6 +166,8 @@ add_library(dingosdk_runtime SHARED
      Extension/HallOfMeat/hall_of_meat_slow_motion.cpp
      Extension/RoadRash/road_rash.cpp
      Extension/RoadRash/road_rash_commands.cpp

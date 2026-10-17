@@ -65,17 +65,19 @@ domination scan 330 440 345 455 0.5   # stand in the red-bowl park first
 
 ## Tested
 
-- **Unit tests:** park files, every built-in park, trick reading, the board, results, teams and the wire format. ReSkate's whole suite passes with it (52 of 52 on `main`).
+- **Unit tests:** park files, every built-in park, trick reading, the board, results, teams and the wire format. ReSkate's whole suite passes with it.
 - **Network tests:** whole rounds between up to 16 simulated players over a bad network (lag, loss, duplicates, clock drift, late joins, leaves, the host leaving, two rounds at once). 1,343 checks.
 - **Fuzz:** 11,000 random rounds with 0 disagreements.
 - **GCC 13:** builds and passes too.
 - **In game:** rounds on San Vansterdam and the Skate 3 map mod, offline, with practice bots running the same multiplayer rules. Every bot's copy of each round agreed with the player's.
 - **Play counts:** a round with bots and a solo round counted (1 with others, 2 in all, on the right map and park), and still there after a restart.
-- **Not yet tried:** two real players online.
+- **Live, two players:** played online between two PCs (two Steam accounts, ReSkate 2.1 built from these branches, a join-code lobby hosted from the DOMINATION tab): rounds ran for both players.
+- **Known limitation:** Start round leaves the pause menu open; close it (Esc) to play. ReSkate has no call that closes the pause menu from code. If you add one, the tab can close it itself.
 
 ## For reviewers and agents
 
 - **Start here:** `Extension/Domination/ARCHITECTURE.md` says where the rules are, every touchpoint outside the folder, and the invariants that keep players in agreement.
+- **On 2.0.7 too:** the same change against `v2.0.7` is a patch on the notes branch (`patches/for-2.0.7/`), with a ready branch on the fork (`domination-2.0.7`); only small fits to the older base differ.
 - **Applying:** `AGENT-GUIDE.md` (submission folder) lists every line this adds to existing files, the conflicts that can happen, and how to check the result.
 - **With the menu:** this works alone, from the console. With "Custom Multiplayer" (#2) in the tree, it also gets its own tab (`domination_menu.cpp`, built only then: `cmake/Runtime.cmake` sets `DINGOSDK_CUSTOM_MODES` when `Extension/CustomModes/custom_modes.h` exists). Nothing else is needed, in either merge order.
 

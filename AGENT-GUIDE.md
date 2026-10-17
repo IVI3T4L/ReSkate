@@ -8,7 +8,7 @@ Three independent changes, applied as patches. Each is one commit. Read this who
 | 2 | `patches/2-custom-multiplayer/` | **Custom Multiplayer**: modes as tabs on the Multiplayer page, hosting and finding games by mode, dropdown rows | nothing |
 | 3 | `patches/3-server-stats/` | **Server: play stats**: dedicated servers count games by mode and map (`data/stats.json`, `stats`) | nothing |
 
-Any of them can be merged, in any order. Domination's tab needs no extra patch: `domination_menu.cpp` is built against Custom Multiplayer only when `Extension/CustomModes/custom_modes.h` exists (`cmake/Runtime.cmake` sets `DINGOSDK_CUSTOM_MODES`; a change to that file re-runs CMake). The patches in this folder are against `main` at `20d58a4`; `patches/for-2.0.7/` holds the same three against `v2.0.7`.
+Any of them can be merged, in any order. Domination's tab needs no extra patch: `domination_menu.cpp` is built against Custom Multiplayer only when `Extension/CustomModes/custom_modes.h` exists (`cmake/Runtime.cmake` sets `DINGOSDK_CUSTOM_MODES`; a change to that file re-runs CMake). The patches in this folder are against `main` at `364c619`; `patches/for-2.0.7/` holds the same three against `v2.0.7`.
 
 ## 1. Apply
 

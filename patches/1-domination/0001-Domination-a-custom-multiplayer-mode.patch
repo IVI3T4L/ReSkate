@@ -1,6 +1,6 @@
-From dc55f4d0e7708b688e77abe8ffd135aa308f5f8c Mon Sep 17 00:00:00 2001
+From 7ec10fadac3a9b00ad9228aa052f871ab50191fb Mon Sep 17 00:00:00 2001
 From: IVI <breakthroughsecurity@gmail.com>
-Date: Sat, 17 Oct 2026 13:39:08 -0400
+Date: Sat, 17 Oct 2026 14:00:08 -0400
 Subject: [PATCH] Domination: a custom multiplayer mode
 
 skate. 3's Domination: own the most spots in a park. The best single trick
@@ -96,7 +96,7 @@ change it safely.
 - teleport_local_skater_heading: a teleport facing a heading.
 - Tests: DINGOSDK_BUILD_DOMINATION_TESTS (ctest -R domination).
 
-Not yet tried between two real players.
+Played online between two players on two PCs (2.1, a join-code lobby).
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 ---
@@ -213,12 +213,12 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
  create mode 100644 Extension/Domination/tools/render_scan.py
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index b6b222d..fba288e 100644
+index 30164a3..ac64741 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -356,6 +356,22 @@ if(DINGOSDK_BUILD_BOARD_BREAK_TESTS)
-     target_include_directories(dingosdk_board_break_tests PRIVATE "${PROJECT_SOURCE_DIR}")
-     add_test(NAME board_break COMMAND dingosdk_board_break_tests)
+@@ -366,6 +366,22 @@ if(DINGOSDK_BUILD_REPLAY_KEYFRAMES_TESTS)
+     target_include_directories(dingosdk_replay_keyframes_tests PRIVATE "${PROJECT_SOURCE_DIR}")
+     add_test(NAME replay_keyframes COMMAND dingosdk_replay_keyframes_tests)
  endif()
 +option(DINGOSDK_BUILD_DOMINATION_TESTS "Build Domination regression tests" OFF)
 +if(DINGOSDK_BUILD_DOMINATION_TESTS)
@@ -240,7 +240,7 @@ index b6b222d..fba288e 100644
  if(DINGOSDK_BUILD_HALL_OF_MEAT_TESTS)
      enable_testing()
 diff --git a/Extension/Console/commands.cpp b/Extension/Console/commands.cpp
-index 5cf3ad2..13efc91 100644
+index b449231..37df3a4 100644
 --- a/Extension/Console/commands.cpp
 +++ b/Extension/Console/commands.cpp
 @@ -229,6 +229,7 @@ const Commands &game_commands() {
@@ -252,7 +252,7 @@ index 5cf3ad2..13efc91 100644
          register_board_break_commands(*result);
          register_grind_exit_commands(*result);
 diff --git a/Extension/Console/commands.h b/Extension/Console/commands.h
-index 0caee4c..8005ff7 100644
+index 828ecd1..7800357 100644
 --- a/Extension/Console/commands.h
 +++ b/Extension/Console/commands.h
 @@ -27,6 +27,7 @@ void start_memory_trace_from_environment() noexcept;
@@ -8313,10 +8313,10 @@ index 64087b2..c70914a 100644
      return true;
  }
 diff --git a/Extension/Profile/local_profile_runtime.h b/Extension/Profile/local_profile_runtime.h
-index f315da0..f5a15b5 100644
+index a787604..3a86f6f 100644
 --- a/Extension/Profile/local_profile_runtime.h
 +++ b/Extension/Profile/local_profile_runtime.h
-@@ -80,6 +80,8 @@ bool teleport_to_local_placed_object(std::string_view map, std::uint64_t token);
+@@ -83,6 +83,8 @@ bool teleport_to_local_placed_object(std::string_view map, std::uint64_t token);
  // Teleports the local skater to a world position (sent within 5 s, when the skater can be
  // moved). False when the game's teleport is unavailable.
  bool teleport_local_skater(const std::array<float, 3>& position);
@@ -8326,7 +8326,7 @@ index f315da0..f5a15b5 100644
  // `bottom`, from the client physics world (the park editor's native ray). Empty when nothing
  // is there yet (collision still streaming) or the query is unavailable. Client update thread.
 diff --git a/Extension/UI/Overlay/overlay_render.cpp b/Extension/UI/Overlay/overlay_render.cpp
-index d1029ae..26eb07c 100644
+index a1b78f9..cf2a30a 100644
 --- a/Extension/UI/Overlay/overlay_render.cpp
 +++ b/Extension/UI/Overlay/overlay_render.cpp
 @@ -5,6 +5,7 @@
@@ -8337,7 +8337,7 @@ index d1029ae..26eb07c 100644
  #include "park_previews.h"
  #include "chat_emotes.h"
  #include "input_capture.h"
-@@ -651,6 +652,7 @@ void render(IDXGISwapChain* presented, UINT flags) {
+@@ -740,6 +741,7 @@ void render(IDXGISwapChain* presented, UINT flags) {
      const bool skate_hud_frame = skate_hud_pending();
      const bool nametag_frame = nametags_pending();
      const bool meat_frame = hall_of_meat_pending();
@@ -8345,7 +8345,7 @@ index d1029ae..26eb07c 100644
      const bool item_browser_frame = item_browser_pending();
      const bool perf_frame = perf_hud_pending() || trainer_hud_pending();
      const bool hub_frame = hub_page_pending();
-@@ -672,7 +674,7 @@ void render(IDXGISwapChain* presented, UINT flags) {
+@@ -762,7 +764,7 @@ void render(IDXGISwapChain* presented, UINT flags) {
          }
          // Hidden, the overlay still draws while a notice or chat line is on screen.
          if (s.loaded_notice_posted && !notices_pending() && !chat_frame && !game_text_frame && !drone_hud_frame && !skate_hud_frame &&
@@ -8354,7 +8354,7 @@ index d1029ae..26eb07c 100644
      } else if (!s.ui_was_interactive) {
          s.ui_was_interactive = true;
          s.last_model = {}; // Reopening immediately reads fresh state.
-@@ -723,6 +725,7 @@ void render(IDXGISwapChain* presented, UINT flags) {
+@@ -814,6 +816,7 @@ void render(IDXGISwapChain* presented, UINT flags) {
      }
      draw_hub_page();
      draw_hall_of_meat();
@@ -8363,7 +8363,7 @@ index d1029ae..26eb07c 100644
      draw_game_text();
      draw_drone_hud();
 diff --git a/Runtime/client_tick.cpp b/Runtime/client_tick.cpp
-index 556d831..a1a311c 100644
+index 241a2f2..67bf18c 100644
 --- a/Runtime/client_tick.cpp
 +++ b/Runtime/client_tick.cpp
 @@ -16,6 +16,7 @@
@@ -8374,15 +8374,15 @@ index 556d831..a1a311c 100644
  #include "Extension/RoadRash/road_rash.h"
  #include "Extension/BoardBreak/board_break.h"
  #include "Extension/BoardBreak/board_break_audio.h"
-@@ -872,6 +873,7 @@ void update_model(std::uintptr_t client, TickState& frame) {
+@@ -878,6 +879,7 @@ void update_model(std::uintptr_t client, TickState& frame) {
+         dingosdk::update_local_item_browser();
      }
-     if (r.observer_failed) return; // Keep the bounded restore/telemetry path available after catalog failure.
      dingosdk::hall_of_meat::on_client_tick();
 +    dingosdk::domination::on_client_tick();
      dingosdk::road_rash::on_client_tick(client);
      dingosdk::drone::outfit::on_client_tick();
      dingosdk::board_break::on_client_tick(client);
-@@ -884,6 +886,7 @@ void update_model(std::uintptr_t client, TickState& frame) {
+@@ -890,6 +892,7 @@ void update_model(std::uintptr_t client, TickState& frame) {
      const auto& current_level = description.lm_level.empty() ? description.level : description.lm_level;
      dingosdk::live_mods::set_current_level(current_level);
      dingosdk::hall_of_meat::set_level(current_level);
@@ -8391,10 +8391,10 @@ index 556d831..a1a311c 100644
      // A live mod apply hands over the destinations its mods declare. A map
      // being played that is no longer among them (its mod disabled or deleted)
 diff --git a/Runtime/runtime_init.cpp b/Runtime/runtime_init.cpp
-index 45cc317..ea68140 100644
+index a6066fc..3dd629b 100644
 --- a/Runtime/runtime_init.cpp
 +++ b/Runtime/runtime_init.cpp
-@@ -28,6 +28,8 @@
+@@ -29,6 +29,8 @@
  #include "Extension/Assets/map_download.h"
  #include "Extension/Boot/offline_boot.h"
  #include "Extension/HallOfMeat/hall_of_meat.h"
@@ -8403,7 +8403,7 @@ index 45cc317..ea68140 100644
  #include "Extension/RoadRash/road_rash.h"
  #include "Extension/BoardBreak/board_break.h"
  #include "Extension/Skater/grind_exit_control.h"
-@@ -437,6 +439,8 @@ extern "C" __declspec(dllexport) BOOL WINAPI DingoSDKDebugInitialize() {
+@@ -440,6 +442,8 @@ extern "C" __declspec(dllexport) BOOL WINAPI DingoSDKDebugInitialize() {
          const bool camera_hook = dingosdk::start_camera_observer(r.base);
          record("{\"event\":\"camera_observer_initialized\",\"active\":" + std::string(camera_hook ? "true" : "false") + "}");
          (void)dingosdk::start_no_bail(r.base);
@@ -8413,10 +8413,10 @@ index 45cc317..ea68140 100644
          record("{\"event\":\"hall_of_meat_initialized\",\"active\":" + std::string(meat ? "true" : "false") + "}");
          const bool rash = dingosdk::road_rash::start(r.base);
 diff --git a/cmake/Runtime.cmake b/cmake/Runtime.cmake
-index 5c6c910..6b4920b 100644
+index 6ffc39b..0e97940 100644
 --- a/cmake/Runtime.cmake
 +++ b/cmake/Runtime.cmake
-@@ -150,6 +150,15 @@ add_library(dingosdk_runtime SHARED
+@@ -155,6 +155,15 @@ add_library(dingosdk_runtime SHARED
      Extension/Skater/physics_tuning.cpp
      Extension/Multiplayer/Remote/remote_collision.cpp
      Extension/Skater/physics_tuning_model.cpp
@@ -8432,7 +8432,7 @@ index 5c6c910..6b4920b 100644
      Extension/HallOfMeat/hall_of_meat.cpp
      Extension/HallOfMeat/hall_of_meat_card.cpp
      Extension/HallOfMeat/hall_of_meat_commands.cpp
-@@ -284,6 +293,11 @@ endif()
+@@ -290,6 +299,11 @@ endif()
  dingosdk_version_info(dingosdk_runtime "ReSkate mod runtime" "ReSkate.dll" VFT_DLL)
  target_include_directories(dingosdk_runtime SYSTEM PRIVATE "${PROJECT_SOURCE_DIR}/External/steam_networking")
  target_link_libraries(dingosdk_runtime PRIVATE dingosdk_lz4 dingosdk_zstd)
@@ -8445,10 +8445,10 @@ index 5c6c910..6b4920b 100644
  # Menu fonts shared with the launcher (licences in External/fonts).
  set(dingosdk_menu_fonts "${PROJECT_SOURCE_DIR}/External/fonts")
 diff --git a/cmake/UI.cmake b/cmake/UI.cmake
-index 38b43cb..57add84 100644
+index 778adce..9289dd5 100644
 --- a/cmake/UI.cmake
 +++ b/cmake/UI.cmake
-@@ -45,6 +45,7 @@ add_library(dingosdk_overlay STATIC
+@@ -47,6 +47,7 @@ add_library(dingosdk_overlay STATIC
      Extension/Music/music_page.cpp
      Extension/Trainer/trainer_view.cpp
      Extension/HallOfMeat/hall_of_meat_overlay.cpp

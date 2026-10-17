@@ -1,15 +1,15 @@
 # Submitting to ReSkate: three pull requests
 
-This was written for the ReSkate maintainers and their coding agents. **Agents: start with [AGENT-GUIDE.md](AGENT-GUIDE.md)** — the exact steps, the files each change touches, what a conflict can look like and how to check the result. Every patch in this folder is made against ReSkate `main` at `20d58a4` ("Merge pull request #262 from Kalmarv/pr/tod-v3", 2026-10-16), after `v2.1.0-pre`. Pictures of everything are in [pictures/](pictures/).
+This was written for the ReSkate maintainers and their coding agents. **Agents: start with [AGENT-GUIDE.md](AGENT-GUIDE.md)** — the exact steps, the files each change touches, what a conflict can look like and how to check the result. Every patch in this folder is made against ReSkate `main` at `364c619` ("Launcher: Steam found on macOS through a Wine-based compatibility tool, and a macOS setup guide", 2026-10-17), after `v2.1.0-pre`. Pictures of everything are in [pictures/](pictures/).
 
 **Two patch sets, the same three changes:**
-- **`patches/1-domination/`, `patches/2-custom-multiplayer/`, `patches/3-server-stats/`** (this folder): against `main` at `20d58a4`. Use these for the pull requests.
+- **`patches/1-domination/`, `patches/2-custom-multiplayer/`, `patches/3-server-stats/`** (this folder): against `main` at `364c619`. Use these for the pull requests.
 - **`patches/for-2.0.7/`** (same three folders): against the `v2.0.7` release (`0f8af62`), the one players run while `2.1.0-pre` is being fixed. Use these to ship Domination on 2.0.7 or to try it there. The code is the same as in the main set apart from three small fits to the older base:
   - `local_surface_hit` (the camera's line-of-sight ray) is added to `Extension/Profile/local_profile_*`, since 2.0.7 doesn't have it yet; `main` already does;
   - the command list and the client tick have no grind-exit lines next to ours, because 2.0.7 has no grind exit;
   - the DOMINATION tab's "Find games" row has no refresh wait, because 2.0.7's browser has none.
 - **Tested on 2.0.7:** the unit tests, the network tests, `fuzz 1000` (0 disagreements), and rounds in game (Hillside park with practice bots; every copy agrees). Our test copy runs it.
-- **Tested on `main` (`20d58a4`):** the same, in a second test copy. It boots (the 2.1.0-pre startup crash is fixed on `main` by `3faa58b`), and a round with practice bots agreed on every copy.
+- **Tested on `main` (`364c619`):** the same, in a second test copy. It boots (the 2.1.0-pre startup crash is fixed on `main` by `3faa58b`), and a round with practice bots agreed on every copy.
 - **Why both:** players are on `2.0.7` while `2.1` is finished; `v2.1.0-pre` itself crashed at startup on our test PC (see the end).
 
 | Folder | What | Depends on |
@@ -47,7 +47,7 @@ Use `-3`: once one of the two is in `main`, the other's patch touches lines next
   - `Extension/Domination/ARCHITECTURE.md` is the map for maintainers and agents: the rules apart from the game, every touchpoint outside the folder, one tick, the invariants that keep players in agreement, and how to change things safely.
 - **Custom Multiplayer:** `-DDINGOSDK_BUILD_MULTIPLAYER_TESTS=ON`, then build the targets `dingosdk_multiplayer_tests` and `dingosdk_multiplayer_lobby_tests`, and run `ctest -R "multiplayer_protocol|multiplayer_lobbies|native_menu_browser"` (the last checks the pause menu's tab order).
   - That option also builds two music probe tools, which failed to link in our tree. They're unrelated to these changes.
-- **Whole suite on `main` (`20d58a4`):** with all three patches, all 52 of ReSkate's tests pass (on `v2.0.7`, all 46) (`multiplayer_mesh` included: Domination adds stubs for the session's two Domination calls to its test, as it does for the throwdown relay). The probe tools `dingosdk_app_audio_probe` and `dingosdk_external_player_probe` don't link on `main` itself.
+- **Whole suite on `main` (`364c619`):** with all three patches, all 52 of ReSkate's tests pass (on `v2.0.7`, all 46) (`multiplayer_mesh` included: Domination adds stubs for the session's two Domination calls to its test, as it does for the throwdown relay). The probe tools `dingosdk_app_audio_probe` and `dingosdk_external_player_probe` don't link on `main` itself.
 - **In game, offline:** checked with 1 and 2 together, in a separate offline copy of the game. On the current code:
   - rounds on Skate3Improved (the red-bowl park) and on San Vansterdam;
   - `domination start` for a park on another map loads that map, then starts;
@@ -105,13 +105,13 @@ Use `-3`: once one of the two is in `main`, the other's patch touches lines next
 - **Play counts (1):** a round with practice bots and a solo round counted (`domination stats`: 1 with others, 2 in all, Skate 3 Improved 2, Red-bowl park 2), and the counts were still there after a restart.
 - **Server play stats (3):** unit tests (`server_stats`), and the server's other tests pass; built on `main` and `v2.0.7`, alone and with 1 and 2. A full build found two server tests that build the whole host without the new file; fixed.
 - **Park-making and packs (1):** in a test copy, `domination tp` then `domination scan` hit all 961 points; `render_scan.py` drew it; `build_park.py` rebuilt Sunken banks from its spec to the shipped file exactly; `make_builtin.py` regenerates `domination_parks.h` byte for byte from `parks/`; the San Vansterdam pack, unzipped into `Mods`, loaded and its (edited) park replaced the built-in one; a pack switched off in the launcher's mod list loads nothing.
-- **Rebased on `main` `20d58a4`** (29 commits after the first base): all three apply cleanly; a Hillside park round with 3 practice bots agreed on every copy, on Skate 3 Improved 1.1.3 (all 48 Skate 3 spots also checked on 1.1.3: the skater stands on each).
+- **Rebased on `main` `364c619`** (two rebases since the first base; the last resolved two conflicts: test options added beside ours in `CMakeLists.txt`, and the Multiplayer page split into `hub_frame`, given its area): all three apply cleanly; a Hillside park round with 3 practice bots agreed on every copy, on Skate 3 Improved 1.1.3 (all 48 Skate 3 spots also checked on 1.1.3: the skater stands on each).
+- **Live, two players:** played online between two PCs (two Steam accounts, ReSkate 2.1 built from these branches, a join-code lobby hosted from the DOMINATION tab): rounds ran for both players.
 - **Not tested yet:**
-  - between two real players online over Steam (needs two Steam accounts online). The rules are covered by the network simulation and the practice bots, but not played between two real games;
   - the Domination tab's Map and Park dropdowns seen by a person (drawn in the tests, not yet pictured);
   - server play stats on a live server with players;
   - the menu sounds on taking or losing a spot (the log can't show them; heard only in play);
-  - hosting and finding games by mode against Steam, though the tags and lobby data have unit tests.
+  - finding games by mode in the tab's list with a second player (hosting from the tab and joining by code was played).
 
 ## The pull request texts
 
@@ -261,14 +261,15 @@ In [pictures/](pictures/), all from the test copies (offline, practice bots stan
 
 | File | Shows |
 |---|---|
-| `01-round-in-progress.jpg` | A round: timer, the spot list in owners' colours, standings, spot labels, edge arrows to spots you don't own, the feed |
-| `02-steal-and-feed.jpg` | A steal (`TAKEN from Bot`) and the feed in each player's colour; the outline of the spot you stand on |
-| `03-results.jpg` | Results: winner, standings with spots, time held, steals and points, awards, who owns each spot |
+| `01-round-in-progress.jpg` | A round: timer, the spot list in owners' colours, standings, spot labels, and the feed of who did what (a banner each in the player's colour) |
+| `02-steal-and-feed.jpg` | Kush steals a spot from you, and you steal it back: the feed's banners |
+| `03-results.jpg` | Results (they come in one after another): the winner's band, standings with spots, time held, steals and points, award cards, who owns each spot |
 | `04-teams-round.jpg`, `05-teams-results.jpg` | A teams round (red against blue) and its results |
 | `06-parks-san-vansterdam.jpg`, `07-parks-skate3improved.jpg` | The ten built-in parks from above, spots and starts drawn on a height map |
 | `08-outlines-before-after.jpg` | Spot outlines before and after line-of-sight hiding |
 | `09-spot-check-hillside.jpg`, `10-spot-check-bonski.jpg` | Spot checks in game: a teleport to each spot with its outline and label |
-| `11-multiplayer-tab.jpg` | The DOMINATION tab on the Multiplayer page (2.0.7 build, during a round) |
+| `11-multiplayer-tab.jpg` | The DOMINATION tab on the Multiplayer page (an earlier build, during a round: before the Map and Park dropdowns) |
+| `12-pack-icons.png` | The two park packs' icons, drawn by `make_pack.py` from the parks' spots |
 
 ## Branches (local, not pushed)
 
@@ -276,12 +277,12 @@ In the worktree `D:\reskate-dev\ReSkate-upstream`:
 
 | Branch | Commit | What |
 |---|---|---|
-| `pr-domination` | dc55f4d | Pull request 1 |
-| `pr-custom-multiplayer` | 25f9c8b | Pull request 2 |
-| `pr-server-stats` | 6483f11 | Pull request 3 |
-| `integration` | c608438 | 1 and 2 merged |
-| `test-build` | 0dd532c | `integration` plus a bot-only launcher change that keeps the test copy offline and isolated, plus Domination's developer tools (practice bots, test claims, park-making commands, the score HUD logger and its replay test). Never submit it. |
-| `pr207-domination`, `pr207-custom-multiplayer`, `pr207-server-stats`, `integration207` | 2b9bc04, fa2fd32, 069211c, f7632fa | The same three on `v2.0.7` (`patches/for-2.0.7/`) |
+| `pr-domination` | 7ec10fa | Pull request 1 |
+| `pr-custom-multiplayer` | e7414f1 | Pull request 2 |
+| `pr-server-stats` | c0d63fb | Pull request 3 |
+| `integration` | 1426169 | 1 and 2 merged |
+| `test-build` | 2b54594 | `integration` plus a bot-only launcher change that keeps the test copy offline and isolated, plus Domination's developer tools (practice bots, test claims, park-making commands, the score HUD logger and its replay test). Never submit it. |
+| `pr207-domination`, `pr207-custom-multiplayer`, `pr207-server-stats`, `integration207` | ab65276, fa2fd32, 069211c, e3bb3b7 | The same three on `v2.0.7` (`patches/for-2.0.7/`) |
 
 The developer tools also sit on their own on `domination-devtools`, a test-only branch. They are not part of these patches and are never submitted.
 
