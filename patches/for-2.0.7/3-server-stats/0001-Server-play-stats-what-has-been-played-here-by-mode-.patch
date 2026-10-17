@@ -1,0 +1,625 @@
+From 069211c26d8f465b337717de385da69551cb6f6f Mon Sep 17 00:00:00 2001
+From: IVI <breakthroughsecurity@gmail.com>
+Date: Fri, 16 Oct 2026 22:28:25 -0400
+Subject: [PATCH] Server: play stats (what has been played here, by mode and
+ map)
+
+A dedicated server now counts the games played on it, from the packets it
+relays anyway (nothing it sends changes), and keeps the counts in
+data/stats.json beside bans.json across restarts:
+
+- Throwdowns: Jam, Spot Battle and S.K.A.T.E. (by the series in the
+  leader's offer; "Throwdown" when the server never heard it), counted once
+  at their start with the players in it; coop challenges at theirs.
+- Domination rounds (when Domination is in the game): a round is counted
+  the first time any of its messages is heard (they all start u8 0xD0,
+  u8 version, u8 type, u32 park, u32 round), and each player the first
+  time they send for it. Older versions' messages are not read.
+- Per mode and map: games, and players summed over them.
+- `stats` on the console (or from an admin) lists them; the server
+  window's overview has a "Played Here" row ("Domination 12, Jam 4").
+- Saved at most once a minute while games are played, and when the
+  server stops; written beside and moved over. An unreadable file is
+  left as it is and said in the log.
+
+Nothing leaves the server. Tests: server_stats (throwdowns, rounds,
+the file).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ CMakeLists.txt                     |   9 +-
+ Server/GUI/server_gui.cpp          |   1 +
+ Server/Test/server_stats_tests.cpp | 132 +++++++++++++++++++++++
+ Server/server_commands.cpp         |   2 +
+ Server/server_engine.cpp           |   1 +
+ Server/server_engine.h             |   1 +
+ Server/server_host.cpp             |  18 +++-
+ Server/server_host.h               |   6 ++
+ Server/server_stats.cpp            | 167 +++++++++++++++++++++++++++++
+ Server/server_stats.h              |  65 +++++++++++
+ cmake/Apps.cmake                   |   4 +-
+ 11 files changed, 402 insertions(+), 4 deletions(-)
+ create mode 100644 Server/Test/server_stats_tests.cpp
+ create mode 100644 Server/server_stats.cpp
+ create mode 100644 Server/server_stats.h
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 4d820c3..ba22a90 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -75,6 +75,11 @@ if(DINGOSDK_BUILD_MULTIPLAYER_TESTS)
+         Extension/Throwdowns/throwdown_wire.cpp)
+     target_include_directories(dingosdk_server_activity_tests PRIVATE "${PROJECT_SOURCE_DIR}")
+     add_test(NAME server_activity COMMAND dingosdk_server_activity_tests)
++    add_executable(dingosdk_server_stats_tests Server/Test/server_stats_tests.cpp Server/server_stats.cpp
++        Extension/Throwdowns/throwdown_wire.cpp)
++    target_include_directories(dingosdk_server_stats_tests PRIVATE "${PROJECT_SOURCE_DIR}")
++    target_link_libraries(dingosdk_server_stats_tests PRIVATE dingosdk_json)
++    add_test(NAME server_stats COMMAND dingosdk_server_stats_tests)
+     add_executable(dingosdk_server_text_tests Server/Test/server_text_tests.cpp)
+     target_include_directories(dingosdk_server_text_tests PRIVATE "${PROJECT_SOURCE_DIR}")
+     add_test(NAME server_text COMMAND dingosdk_server_text_tests)
+@@ -101,7 +106,7 @@ if(DINGOSDK_BUILD_MULTIPLAYER_TESTS)
+         $<$<BOOL:${WIN32}>:Launcher/updater.cpp> Server/global_bans.cpp Server/server_words.cpp Extension/Multiplayer/developer_identity.cpp
+         Extension/Multiplayer/word_lists.cpp Extension/Multiplayer/Net/protocol.cpp Extension/Multiplayer/Net/delta_codec.cpp
+         Extension/Multiplayer/Net/wire_codec.cpp Extension/Multiplayer/Remote/playback_buffers.cpp
+-        Extension/Multiplayer/Session/password.cpp Server/server_activity.cpp Server/server_votes.cpp Server/server_commands.cpp
++        Extension/Multiplayer/Session/password.cpp Server/server_activity.cpp Server/server_stats.cpp Server/server_votes.cpp Server/server_commands.cpp
+         Server/server_parks.cpp Extension/Throwdowns/throwdown_wire.cpp)
+     target_include_directories(dingosdk_server_park_tests PRIVATE "${PROJECT_SOURCE_DIR}")
+     target_include_directories(dingosdk_server_park_tests SYSTEM PRIVATE "${PROJECT_SOURCE_DIR}/External/steam_networking")
+@@ -257,7 +262,7 @@ if(DINGOSDK_BUILD_MULTIPLAYER_TESTS AND WIN32)
+         Extension/Multiplayer/Net/protocol.cpp
+         Extension/Multiplayer/Net/delta_codec.cpp Extension/Multiplayer/Net/wire_codec.cpp
+         Extension/Multiplayer/Remote/playback_buffers.cpp Extension/Multiplayer/Session/password.cpp
+-        Server/server_activity.cpp Server/server_votes.cpp Server/server_commands.cpp Server/server_parks.cpp Extension/Throwdowns/throwdown_wire.cpp)
++        Server/server_activity.cpp Server/server_stats.cpp Server/server_votes.cpp Server/server_commands.cpp Server/server_parks.cpp Extension/Throwdowns/throwdown_wire.cpp)
+     target_include_directories(dingosdk_server_load_tests PRIVATE "${PROJECT_SOURCE_DIR}")
+     target_include_directories(dingosdk_server_load_tests SYSTEM PRIVATE "${PROJECT_SOURCE_DIR}/External/steam_networking")
+     target_link_libraries(dingosdk_server_load_tests PRIVATE dingosdk_launcher_support dingosdk_world_layer_scan dingosdk_json
+diff --git a/Server/GUI/server_gui.cpp b/Server/GUI/server_gui.cpp
+index 2e708a4..f973929 100644
+--- a/Server/GUI/server_gui.cpp
++++ b/Server/GUI/server_gui.cpp
+@@ -778,6 +778,7 @@ void draw_overview_tab(const ServerStatusSnapshot& stats) {
+         const auto secs = stats.uptime_seconds % 60;
+         std::snprintf(buf, sizeof(buf), "%02llu:%02llu:%02llu", hours, mins, secs);
+         stat_row("Server Uptime", buf);
++        stat_row("Played Here", stats.played.empty() ? std::string("Nothing yet") : stats.played); // data/stats.json; `stats` for more
+ 
+         ImGui::Spacing();
+         ImGui::PushStyleColor(ImGuiCol_Text, muted);
+diff --git a/Server/Test/server_stats_tests.cpp b/Server/Test/server_stats_tests.cpp
+new file mode 100644
+index 0000000..6989008
+--- /dev/null
++++ b/Server/Test/server_stats_tests.cpp
+@@ -0,0 +1,132 @@
++#include "Server/server_stats.h"
++#include "Extension/Throwdowns/throwdown_wire.h"
++#include <cstdio>
++#include <filesystem>
++#include <fstream>
++#include <string>
++#include <vector>
++
++using namespace dingosdk;
++using namespace dingosdk::server;
++using multiplayer::ThrowdownMessage;
++using Kind = ThrowdownMessage::Kind;
++
++namespace {
++int failures = 0;
++void check(bool condition, const char *what) {
++    if (condition) return;
++    ++failures;
++    std::fprintf(stderr, "FAILED: %s\n", what);
++}
++constexpr std::uint64_t zee = 76561198000000001ULL, kush = 76561198000000002ULL, tally = 76561198000000003ULL;
++constexpr std::uint64_t second = 1'000'000;
++const std::string sanvan = "San Vansterdam", s3i = "Skate 3 Improved";
++
++std::vector<std::uint8_t> throwdown(Kind kind, std::string series = {}, std::vector<std::uint64_t> order = {}, std::uint32_t id = 7) {
++    ThrowdownMessage m;
++    m.kind = kind;
++    m.leader = zee;
++    m.id = id;
++    m.series = std::move(series);
++    m.order = std::move(order);
++    if (kind == Kind::offer) m.placement = {1, 2, 3};
++    if (kind == Kind::challenge_start) m.challenge = "Plot-014-OTS-03";
++    return multiplayer::encode_throwdown(m);
++}
++// Domination's header (domination_wire.h): u8 0xD0, u8 version, u8 type, u32 park, u32 round, then the rest.
++std::vector<std::uint8_t> domination(std::uint32_t park, std::uint32_t round, std::uint8_t version = 4, std::uint8_t type = 2) {
++    std::vector<std::uint8_t> b{0xD0, version, type};
++    for (const auto v : {park, round})
++        for (int i = 0; i < 4; ++i) b.push_back(static_cast<std::uint8_t>(v >> (8 * i)));
++    b.push_back(0); // (a board's count, and so on: not read)
++    return b;
++}
++PlayStats::Count count(const PlayStats &s, const std::string &mode, const std::string &map) {
++    const auto m = s.table().find(mode);
++    if (m == s.table().end()) return {};
++    const auto c = m->second.find(map);
++    return c == m->second.end() ? PlayStats::Count{} : c->second;
++}
++
++void throwdowns() {
++    PlayStats s;
++    s.relayed(zee, throwdown(Kind::offer, "JamSession"), sanvan, 0);
++    check(s.table().empty() && !s.changed(), "an offer is not a game");
++    s.relayed(kush, throwdown(Kind::start, {}, {zee, kush}), sanvan, second);
++    check(s.table().empty(), "only the leader starts a throwdown");
++    s.relayed(zee, throwdown(Kind::start, {}, {zee, kush, tally}), sanvan, 2 * second);
++    check((count(s, "Jam", sanvan) == PlayStats::Count{1, 3}), "a Jam started with three players");
++    check(s.changed() && !s.since().empty(), "counted from today");
++    s.relayed(zee, throwdown(Kind::start, {}, {zee, kush, tally}), sanvan, 3 * second);
++    check((count(s, "Jam", sanvan) == PlayStats::Count{1, 3}), "a start heard twice counts once");
++    // One started before the server heard its offer: counted, as a throwdown.
++    s.relayed(zee, throwdown(Kind::start, {}, {zee}, 8), s3i, 4 * second);
++    check((count(s, "Throwdown", s3i) == PlayStats::Count{1, 1}), "a start without its offer");
++    s.relayed(zee, throwdown(Kind::offer, "ThrowdownSkate", {}, 9), s3i, 5 * second);
++    s.relayed(zee, throwdown(Kind::start, {}, {zee, tally}, 9), s3i, 6 * second);
++    check((count(s, "S.K.A.T.E.", s3i) == PlayStats::Count{1, 2}), "S.K.A.T.E. by its series");
++    s.relayed(zee, throwdown(Kind::challenge_start, "Challenges", {zee, kush}, 10), s3i, 7 * second);
++    check((count(s, "Coop challenge", s3i) == PlayStats::Count{1, 2}), "a coop challenge");
++    s.relayed(zee, throwdown(Kind::score), sanvan, 8 * second);
++    check(s.table().size() == 4, "scores, rows and turns are not games");
++}
++
++void rounds() {
++    PlayStats s;
++    s.relayed(zee, domination(0xAAAA, 1), s3i, 0);
++    check((count(s, "Domination", s3i) == PlayStats::Count{1, 1}), "a round, the first time it is heard");
++    s.relayed(zee, domination(0xAAAA, 1), s3i, second);
++    s.relayed(kush, domination(0xAAAA, 1, 4, 1), s3i, 2 * second);
++    s.relayed(kush, domination(0xAAAA, 1), s3i, 3 * second);
++    check((count(s, "Domination", s3i) == PlayStats::Count{1, 2}), "each player once, whatever they send");
++    s.relayed(tally, domination(0xAAAA, 2), s3i, 4 * second);
++    s.relayed(tally, domination(0xBBBB, 1), sanvan, 5 * second);
++    check(count(s, "Domination", s3i).games == 2 && count(s, "Domination", sanvan).games == 1, "a round is its park and number");
++    s.relayed(zee, domination(0xCCCC, 1, 3), s3i, 6 * second);
++    check(count(s, "Domination", s3i).games == 2, "an older version's messages are not read");
++    s.relayed(zee, std::vector<std::uint8_t>{0xD0, 4, 2, 1}, s3i, 7 * second);
++    check(count(s, "Domination", s3i).games == 2, "a short message is not read");
++    // Quiet for ten minutes: forgotten (it was counted).
++    s.tick(7 * second + 11 * 60 * second);
++    s.relayed(zee, domination(0xAAAA, 1), s3i, 12 * 60 * second);
++    check(count(s, "Domination", s3i).games == 3, "a round forgotten after ten quiet minutes");
++}
++
++void file() {
++    const auto folder = std::filesystem::temp_directory_path() / "reskate-server-stats-test";
++    std::filesystem::remove_all(folder);
++    const auto path = folder / "data" / "stats.json";
++    {
++        PlayStats s(path);
++        check(s.load(), "no file: nothing played");
++        s.relayed(zee, domination(1, 1), s3i, 0);
++        s.relayed(kush, domination(1, 1), s3i, 0);
++        s.relayed(zee, throwdown(Kind::start, {}, {zee}), sanvan, 0);
++        s.save();
++        check(!s.changed() && std::filesystem::exists(path), "saved");
++    }
++    PlayStats again(path);
++    check(again.load(), "read back");
++    check((count(again, "Domination", s3i) == PlayStats::Count{1, 2}) && count(again, "Throwdown", sanvan).games == 1, "the counts survive");
++    check(!again.since().empty(), "and the day counting started");
++    const auto report = again.report();
++    check(report.find("Domination: 1 (2 players in all; Skate 3 Improved 1)") != std::string::npos, "the report");
++    check(again.summary() == "Domination 1, Throwdown 1", "the summary");
++    { std::ofstream(path, std::ios::trunc) << "{ not json"; }
++    PlayStats broken(path);
++    check(!broken.load(), "an unreadable file says so");
++    std::filesystem::remove_all(folder);
++}
++} // namespace
++
++int main() {
++    throwdowns();
++    rounds();
++    file();
++    if (failures) {
++        std::fprintf(stderr, "%d server stats check(s) failed\n", failures);
++        return 1;
++    }
++    std::puts("server stats: all checks passed");
++    return 0;
++}
+diff --git a/Server/server_commands.cpp b/Server/server_commands.cpp
+index 971bc9b..ca9ea9f 100644
+--- a/Server/server_commands.cpp
++++ b/Server/server_commands.cpp
+@@ -32,6 +32,7 @@ constexpr std::string_view help_text =
+     "park-mod config add <name> | <mod folder> | <map> [| <key>] | park-mod config remove <name>\n"
+     "activity-log on|off | announce-throwdowns on|off | parties [on|off] | party-size <2-8> | afk-kick <minutes>|off | speed-check off|warn|kick | board-check off|warn|kick\n"
+     "score-check [off|warn|kick] | score-allow [<fingerprint>|remove <fingerprint>] | words [reload | global on|off]\n"
++    "stats (what has been played here: games by mode and map)\n"
+     "reserved [slots <n> | add|remove <SteamID64>] | roles [reload] | role <player or SteamID64> <role>|none | update | quit";
+ } // namespace
+ 
+@@ -73,6 +74,7 @@ std::string Host::command(std::string_view line, std::uint64_t admin) {
+         return text;
+     };
+     if (name.empty() || name == "help") return std::string(help_text);
++    if (name == "stats") return stats_.report();
+     if (name == "status")
+         return config_.name + " | " + map_name() + " | " + std::to_string(players()) + "/" +
+                std::to_string(config_.max_players) + " players | " + std::to_string(config_.tps) + " TPS | voice " +
+diff --git a/Server/server_engine.cpp b/Server/server_engine.cpp
+index f8c07c9..681157f 100644
+--- a/Server/server_engine.cpp
++++ b/Server/server_engine.cpp
+@@ -561,6 +561,7 @@ void ServerEngine::worker_loop() {
+             s.voice_allowed = host_->voice_allowed();
+             s.voice_range = config_.voice_range;
+             s.has_password = host_->has_password();
++            s.played = host_->play_summary();
+             s.is_listed = config_.listed;
+             s.steam_token = config_.steam_token;
+             s.has_steam_token = !config_.steam_token.empty();
+diff --git a/Server/server_engine.h b/Server/server_engine.h
+index 415e2d5..6e48314 100644
+--- a/Server/server_engine.h
++++ b/Server/server_engine.h
+@@ -50,6 +50,7 @@ struct ServerStatusSnapshot {
+     std::string last_error;
+     std::string server_name;
+     std::string map_name;
++    std::string played; // what has been played here (Host::play_summary)
+     unsigned player_count{};
+     unsigned max_players{};
+     unsigned target_tps{dedicated_tps};
+diff --git a/Server/server_host.cpp b/Server/server_host.cpp
+index 3723bf8..61dbdfa 100644
+--- a/Server/server_host.cpp
++++ b/Server/server_host.cpp
+@@ -54,8 +54,10 @@ Host::Host(ServerConfig &config, SteamTransport &transport, Log log)
+                     const auto *guest = find(id);
+                     return guest && guest->handshaken ? guest_name(*guest) : std::string{};
+                 },
+-                [this](const std::string &text) { if (config_.announce_throwdowns) send_chat(text); }) {
++                [this](const std::string &text) { if (config_.announce_throwdowns) send_chat(text); }),
++      stats_(config_.file.parent_path() / "data" / "stats.json") {
+     parties_.set_limit(config_.party_size);
++    if (!stats_.load()) log_("data/stats.json can't be read: games are counted from now on, and it is left as it is.");
+ }
+ 
+ Host::Guest *Host::find(std::uint64_t id) {
+@@ -272,8 +274,19 @@ bool Host::start(std::string &error) {
+     roster_dirty_ = true;
+     return true;
+ }
++// At most once a minute while games are played, and when the server stops.
++void Host::save_stats() {
++    next_stats_save_ = now_ + 60'000'000;
++    try {
++        stats_.save();
++    } catch (const std::exception &error) {
++        log_(std::string("Couldn't save data/stats.json: ") + error.what());
++    }
++}
++
+ void Host::stop(const std::string &reason) {
+     if (!running_) return;
++    save_stats();
+     const auto away = packet(PacketKind::away, now_us());
+     for (auto &[id, guest] : guests_)
+         if (guest->handshaken) send_packet(*guest, away, true, false);
+@@ -1277,6 +1290,7 @@ void Host::receive(std::uint64_t peer, std::span<const std::uint8_t> bytes, std:
+         link->last_packet = now_;
+         if (config_.activity_log || config_.announce_throwdowns)
+             activity_.throwdown(peer, p.throwdown, link->latest_root ? &link->latest_root->position : nullptr, now_);
++        stats_.relayed(peer, p.throwdown, map_name(), now_);
+         broadcast(p, true, false, p.source);
+         return;
+     }
+@@ -1861,6 +1875,8 @@ void Host::tick(std::uint64_t now) {
+     tick_parks();
+     sync_objects();
+     activity_.tick(now_);
++    stats_.tick(now_);
++    if (stats_.changed() && now_ >= next_stats_save_) save_stats();
+     if (std::exchange(vote_recount_, false)) check_vote(false);
+     if (vote_ && now_ >= vote_->ends) check_vote(true);
+     // A finished vote has been shown long enough.
+diff --git a/Server/server_host.h b/Server/server_host.h
+index 2a8919c..b26feb2 100644
+--- a/Server/server_host.h
++++ b/Server/server_host.h
+@@ -1,5 +1,6 @@
+ #pragma once
+ #include "server_activity.h"
++#include "server_stats.h"
+ #include "worker_pool.h"
+ #include "server_config.h"
+ #include "board_check.h"
+@@ -46,6 +47,8 @@ class Host {
+ 
+     std::string invite() const;
+     std::string map_name() const;
++    // What has been played here (data/stats.json), in a line: "Domination 12, Jam 4".
++    std::string play_summary() const { return stats_.summary(); }
+     unsigned players() const;
+     std::uint64_t secret() const { return secret_; }
+     // The UDP port players may connect straight to, or 0 (config connection).
+@@ -225,6 +228,9 @@ class Host {
+     SteamTransport &transport_;
+     Log log_;
+     ActivityLog activity_; // what players do, for the console (config_.activity_log)
++    PlayStats stats_;      // what has been played here (data/stats.json)
++    std::uint64_t next_stats_save_{};
++    void save_stats();
+     // The running player vote (server_votes.cpp), and when each player may start another.
+     // A poll is one too: it has answers instead of yes and no, and runs nothing (but the console's poll-run).
+     struct Vote {
+diff --git a/Server/server_stats.cpp b/Server/server_stats.cpp
+new file mode 100644
+index 0000000..9ac68ae
+--- /dev/null
++++ b/Server/server_stats.cpp
+@@ -0,0 +1,167 @@
++#include "server_stats.h"
++#include "Engine/Core/Json/json.h"
++#include "Extension/Throwdowns/throwdown_wire.h"
++#include <algorithm>
++#include <chrono>
++#include <format>
++#include <fstream>
++#include <sstream>
++#include <stdexcept>
++#include <vector>
++
++namespace dingosdk::server {
++using multiplayer::ThrowdownMessage;
++using Kind = ThrowdownMessage::Kind;
++
++namespace {
++// A game not heard from for this long is over (Domination players resend their boards every few
++// seconds; a throwdown sends at least every turn).
++constexpr std::uint64_t forget_us = 10ull * 60 * 1'000'000;
++// Domination's messages: u8 tag 0xD0, u8 version, u8 type, u32 park, u32 round, ... The park and
++// round are in every type since version 4.
++constexpr std::uint8_t domination_tag = 0xD0, domination_since = 4;
++constexpr std::size_t domination_header = 11;
++
++std::string mode(std::string_view series) {
++    if (series == "JamSession") return "Jam";
++    if (series == "SpotBattle") return "Spot Battle";
++    if (series == "ThrowdownSkate") return "S.K.A.T.E.";
++    return "Throwdown"; // the series is peer text: never kept as it came
++}
++std::uint32_t u32(std::span<const std::uint8_t> b, std::size_t at) {
++    return b[at] | (b[at + 1] << 8) | (b[at + 2] << 16) | (static_cast<std::uint32_t>(b[at + 3]) << 24);
++}
++std::string today() {
++    const std::chrono::year_month_day day{std::chrono::floor<std::chrono::days>(std::chrono::system_clock::now())};
++    return std::format("{:04}-{:02}-{:02}", static_cast<int>(day.year()), static_cast<unsigned>(day.month()),
++                       static_cast<unsigned>(day.day()));
++}
++std::string plural(std::uint64_t n, const char *one, const char *many) { return std::to_string(n) + " " + (n == 1 ? one : many); }
++} // namespace
++
++bool PlayStats::load() {
++    if (file_.empty() || !std::filesystem::exists(file_)) return true;
++    try {
++        std::ifstream in(file_, std::ios::binary);
++        std::stringstream text;
++        text << in.rdbuf();
++        const auto json = Json::parse(text.str());
++        Table table;
++        if (json.contains("played") && json.at("played").is_object())
++            for (const auto &[mode, maps] : json.at("played").items())
++                if (maps.is_object())
++                    for (const auto &[map, count] : maps.items())
++                        if (count.is_object()) table[mode][map] = {count.value<std::uint64_t>("games", 0), count.value<std::uint64_t>("players", 0)};
++        table_ = std::move(table);
++        since_ = json.value<std::string>("since", "");
++        return true;
++    } catch (...) {
++        return false;
++    }
++}
++
++void PlayStats::save() {
++    if (!dirty_ || file_.empty()) return;
++    auto played = Json::object();
++    for (const auto &[mode, maps] : table_)
++        for (const auto &[map, count] : maps) {
++            auto entry = Json::object();
++            entry["games"] = count.games;
++            entry["players"] = count.players;
++            played[mode][map] = std::move(entry);
++        }
++    auto json = Json::object();
++    json["since"] = since_;
++    json["played"] = std::move(played);
++    // (Written beside and moved over, so a crash mid-write leaves the last one.)
++    std::filesystem::create_directories(file_.parent_path());
++    const auto temporary = std::filesystem::path(file_).concat(".tmp");
++    {
++        std::ofstream out(temporary, std::ios::binary | std::ios::trunc);
++        out << json.dump(2) << '\n';
++        if (!out) throw std::runtime_error("cannot write " + temporary.string());
++    }
++    std::filesystem::rename(temporary, file_);
++    dirty_ = false;
++}
++
++void PlayStats::add(const std::string &mode, const std::string &map, std::uint64_t players) {
++    auto &count = table_[mode][map];
++    ++count.games;
++    count.players += players;
++    if (since_.empty()) since_ = today();
++    dirty_ = true;
++}
++void PlayStats::add_player(const std::string &mode, const std::string &map) {
++    ++table_[mode][map].players;
++    dirty_ = true;
++}
++
++void PlayStats::relayed(std::uint64_t sender, std::span<const std::uint8_t> bytes, const std::string &map, std::uint64_t now) {
++    if (bytes.size() >= domination_header && bytes[0] == domination_tag) {
++        if (bytes[1] < domination_since) return;
++        auto [it, fresh] = rounds_.try_emplace({u32(bytes, 3), u32(bytes, 7)});
++        auto &round = it->second;
++        round.last = now;
++        if (fresh) {
++            round.map = map;
++            round.players.insert(sender);
++            add("Domination", map, 1);
++        } else if (round.players.insert(sender).second) add_player("Domination", round.map);
++        return;
++    }
++    const auto decoded = multiplayer::decode_throwdown(bytes);
++    if (!decoded) return;
++    const auto &m = *decoded;
++    const Key key{m.leader, m.id};
++    if (m.kind == Kind::offer) {
++        if (sender == m.leader) series_[key] = {m.series, now};
++        return;
++    }
++    const bool start = m.kind == Kind::start, challenge = m.kind == Kind::challenge_start;
++    if ((!start && !challenge) || sender != m.leader) return;
++    if (const auto counted = started_.find(key); counted != started_.end()) {
++        counted->second = now; // heard again
++        return;
++    }
++    started_[key] = now;
++    const auto offered = series_.find(key);
++    add(challenge ? std::string("Coop challenge") : mode(offered != series_.end() ? offered->second.first : std::string_view{}), map,
++        m.order.size());
++    if (offered != series_.end()) series_.erase(offered);
++}
++
++void PlayStats::tick(std::uint64_t now) {
++    const auto quiet = [&](std::uint64_t last) { return now > last && now - last > forget_us; };
++    std::erase_if(rounds_, [&](const auto &entry) { return quiet(entry.second.last); });
++    std::erase_if(started_, [&](const auto &entry) { return quiet(entry.second); });
++    std::erase_if(series_, [&](const auto &entry) { return quiet(entry.second.second); });
++}
++
++std::string PlayStats::report() const {
++    if (table_.empty()) return "Nothing played here yet (counted: Domination rounds, Jam, Spot Battle, S.K.A.T.E., coop challenges).";
++    std::string text = "Played here since " + since_ + ":";
++    for (const auto &[mode, maps] : table_) {
++        Count all;
++        std::vector<std::pair<std::string, Count>> by_map(maps.begin(), maps.end());
++        std::ranges::stable_sort(by_map, [](const auto &a, const auto &b) { return a.second.games > b.second.games; });
++        std::string where;
++        for (const auto &[map, count] : by_map) {
++            all.games += count.games, all.players += count.players;
++            where += (where.empty() ? "" : ", ") + map + " " + std::to_string(count.games);
++        }
++        text += std::format("\n  {}: {} ({} in all; {})", mode, all.games, plural(all.players, "player", "players"), where);
++    }
++    return text;
++}
++
++std::string PlayStats::summary() const {
++    std::string text;
++    for (const auto &[mode, maps] : table_) {
++        std::uint64_t games = 0;
++        for (const auto &[map, count] : maps) games += count.games;
++        text += (text.empty() ? "" : ", ") + mode + " " + std::to_string(games);
++    }
++    return text;
++}
++} // namespace dingosdk::server
+diff --git a/Server/server_stats.h b/Server/server_stats.h
+new file mode 100644
+index 0000000..98ea792
+--- /dev/null
++++ b/Server/server_stats.h
+@@ -0,0 +1,65 @@
++#pragma once
++#include <cstdint>
++#include <filesystem>
++#include <map>
++#include <set>
++#include <span>
++#include <string>
++#include <utility>
++
++namespace dingosdk::server {
++// What has been played on this server: games started, by mode and map, with how many took part,
++// kept in data/stats.json across restarts. Read from the throwdown packets the server relays
++// anyway (nothing here changes what it sends) and kept on the server alone:
++// - throwdowns (Extension/Throwdowns/throwdown_wire.h): Jam, Spot Battle, S.K.A.T.E. (counted at
++//   their start, with the players in it) and coop challenges;
++// - Domination rounds (Extension/Domination/domination_wire.h, when it is in): every message
++//   starts u8 0xD0, u8 version, u8 type, u32 park, u32 round; a round is counted the first time
++//   it is heard, and each player the first time they send for it.
++class PlayStats {
++  public:
++    struct Count {
++        std::uint64_t games{}, players{}; // players: summed over the games (one player in two games is two)
++        bool operator==(const Count &) const = default;
++    };
++    // mode ("Domination", "Jam", ...) -> map -> count
++    using Table = std::map<std::string, std::map<std::string, Count>, std::less<>>;
++
++    explicit PlayStats(std::filesystem::path file = {}) : file_(std::move(file)) {}
++    // Reads the file (missing: nothing played yet). False, keeping what is there, if it is unreadable.
++    bool load();
++    // Writes the file when something changed since the last write. Throws when it can't.
++    void save();
++    bool changed() const { return dirty_; }
++
++    // One relayed throwdown packet from `sender` while `map` is loaded; `now` in microseconds.
++    void relayed(std::uint64_t sender, std::span<const std::uint8_t> message, const std::string &map, std::uint64_t now);
++    // Forgets games that went quiet (each is counted already).
++    void tick(std::uint64_t now);
++
++    const Table &table() const { return table_; }
++    const std::string &since() const { return since_; }
++    // "Played here since 2026-10-16: Domination 12 (41 players; Skate 3 Improved 9, San Vansterdam 3); Jam 4 (...)".
++    std::string report() const;
++    // One line for a status panel: "Domination 12, Jam 4" (empty: nothing yet).
++    std::string summary() const;
++
++  private:
++    void add(const std::string &mode, const std::string &map, std::uint64_t players);
++    void add_player(const std::string &mode, const std::string &map);
++
++    std::filesystem::path file_;
++    Table table_;
++    std::string since_; // the day the first game was counted (UTC, YYYY-MM-DD)
++    bool dirty_{};
++    using Key = std::pair<std::uint64_t, std::uint32_t>; // throwdowns: leader, their number for it
++    std::map<Key, std::pair<std::string, std::uint64_t>> series_; // offered: its series, last heard
++    std::map<Key, std::uint64_t> started_;                       // counted: last heard
++    struct Round {
++        std::string map;
++        std::set<std::uint64_t> players;
++        std::uint64_t last{};
++    };
++    std::map<std::pair<std::uint32_t, std::uint32_t>, Round> rounds_; // Domination: park, round
++};
++} // namespace dingosdk::server
+diff --git a/cmake/Apps.cmake b/cmake/Apps.cmake
+index 073d75c..7a2f848 100644
+--- a/cmake/Apps.cmake
++++ b/cmake/Apps.cmake
+@@ -185,6 +185,7 @@ if(WIN32)
+         Extension/Multiplayer/Net/delta_codec.cpp Extension/Multiplayer/Net/wire_codec.cpp
+         Extension/Multiplayer/Remote/playback_buffers.cpp Extension/Multiplayer/Session/password.cpp
+         Server/server_activity.cpp Server/server_votes.cpp Server/server_commands.cpp Server/server_parks.cpp Extension/Throwdowns/throwdown_wire.cpp
++        Server/server_stats.cpp
+         "${CMAKE_CURRENT_BINARY_DIR}/generated/launcher_resources.rc")
+     target_include_directories(dingosdk_server SYSTEM PRIVATE "${PROJECT_SOURCE_DIR}/External/steam_networking")
+     target_link_libraries(dingosdk_server PRIVATE dingosdk_launcher_support dingosdk_world_layer_scan dingosdk_json
+@@ -201,7 +202,8 @@ else()
+         Extension/Multiplayer/Steam/steam_transport.cpp Extension/Multiplayer/Net/protocol.cpp
+         Extension/Multiplayer/Net/delta_codec.cpp Extension/Multiplayer/Net/wire_codec.cpp
+         Extension/Multiplayer/Remote/playback_buffers.cpp Extension/Multiplayer/Session/password.cpp
+-        Server/server_activity.cpp Server/server_votes.cpp Server/server_commands.cpp Server/server_parks.cpp Extension/Throwdowns/throwdown_wire.cpp)
++        Server/server_activity.cpp Server/server_votes.cpp Server/server_commands.cpp Server/server_parks.cpp Extension/Throwdowns/throwdown_wire.cpp
++        Server/server_stats.cpp)
+     target_include_directories(dingosdk_server SYSTEM PRIVATE "${PROJECT_SOURCE_DIR}/External/steam_networking")
+     target_link_libraries(dingosdk_server PRIVATE dingosdk_launcher_support dingosdk_world_layer_scan dingosdk_json
+         dingosdk_lz4 dingosdk_zstd dingosdk_miniz dingosdk_word_filter OpenSSL::Crypto dl pthread)
+-- 
+2.50.1.windows.1
+
