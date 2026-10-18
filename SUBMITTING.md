@@ -1,22 +1,17 @@
 # Submitting to ReSkate: three pull requests
 
-This was written for the ReSkate maintainers and their coding agents. **Agents: start with [AGENT-GUIDE.md](AGENT-GUIDE.md)** — the exact steps, the files each change touches, what a conflict can look like and how to check the result. Every patch in this folder is made against ReSkate `main` at `364c619` ("Launcher: Steam found on macOS through a Wine-based compatibility tool, and a macOS setup guide", 2026-10-17), after `v2.1.0-pre`. Pictures of everything are in [pictures/](pictures/).
+This was written for the ReSkate maintainers and their coding agents. **Agents: start with [AGENT-GUIDE.md](AGENT-GUIDE.md)** — the exact steps, the files each change touches, what a conflict can look like and how to check the result. Every patch in this folder is made against ReSkate `main` at `99467f4` ("Official mods: an installed one can be uninstalled on the OFFICIAL tab", 2026-10-17), 11 commits after the official `v2.1.0` release (`ba1245a`). Pictures of everything are in [pictures/](pictures/).
 
-**Two patch sets, the same three changes:**
-- **`patches/1-domination/`, `patches/2-custom-multiplayer/`, `patches/3-server-stats/`** (this folder): against `main` at `364c619`. Use these for the pull requests.
-- **`patches/for-2.0.7/`** (same three folders): against the `v2.0.7` release (`0f8af62`), the one players run while `2.1.0-pre` is being fixed. Use these to ship Domination on 2.0.7 or to try it there. The code is the same as in the main set apart from three small fits to the older base:
-  - `local_surface_hit` (the camera's line-of-sight ray) is added to `Extension/Profile/local_profile_*`, since 2.0.7 doesn't have it yet; `main` already does;
-  - the command list and the client tick have no grind-exit lines next to ours, because 2.0.7 has no grind exit;
-  - the DOMINATION tab's "Find games" row has no refresh wait, because 2.0.7's browser has none.
-- **Tested on 2.0.7:** the unit tests, the network tests, `fuzz 1000` (0 disagreements), and rounds in game (Hillside park with practice bots; every copy agrees). Our test copy runs it.
-- **Tested on `main` (`364c619`):** the same, in a second test copy. It boots (the 2.1.0-pre startup crash is fixed on `main` by `3faa58b`), and a round with practice bots agreed on every copy.
-- **Why both:** players are on `2.0.7` while `2.1` is finished; `v2.1.0-pre` itself crashed at startup on our test PC (see the end).
+**One patch set, three changes, two bases checked:**
+- **`1-domination/`, `2-custom-multiplayer/`, `3-server-stats/`**: against `main` at `99467f4`. Use these for the pull requests.
+- **On `v2.1.0` too:** 1 and 3 apply to the release as they are; 2 applies with `git am -3` (one line was added beside ours in `Runtime/client_tick.cpp` after the release; keep both). Network protocol (52) and game build (25414733) are the same on both.
+- **Tested on `v2.1.0` and on `main` (`99467f4`):** with all three applied, ReSkate's whole test suite (52 of 53 pass on each; the one not run is ReSkate's own `server_config` test, which doesn't compile on either base, see Building and testing), `fuzz 1000` (0 of 1000 rounds disagreed, 28,274 checks), and in game in an offline test copy with the `v2.1.0` build and then the `main` build: a Red-bowl park round with 3 practice bots on each (every copy agreed), and on `main` also a Rolling Waves (San Vansterdam) round with 3 bots (agreed), `domination parks`, `domination stats`, and `domination tp` then `domination scan` (31 x 31 points, all hit).
 
 | Folder | What | Depends on |
 |---|---|---|
-| `patches/1-domination/` | **Domination**, a custom multiplayer mode, played from the console | nothing |
-| `patches/2-custom-multiplayer/` | **Custom Multiplayer**: custom modes plug in as tabs on the Multiplayer page, plus hosting and finding games by mode | nothing |
-| `patches/3-server-stats/` | **Server: play stats**: dedicated servers count the games played on them, by mode and map (`data/stats.json`, `stats`) | nothing |
+| `1-domination/` | **Domination**, a custom multiplayer mode, played from the console | nothing |
+| `2-custom-multiplayer/` | **Custom Multiplayer**: custom modes plug in as tabs on the Multiplayer page, plus hosting and finding games by mode | nothing |
+| `3-server-stats/` | **Server: play stats**: dedicated servers count the games played on them, by mode and map (`data/stats.json`, `stats`) | nothing |
 
 - **Independence:** all three build and work alone. 1 and 2 merge cleanly in either order (checked both ways, with `git merge` and with `git am -3`; both orders give the same tree). They add their lines in different spots of the shared files: the command list, `Extension/Multiplayer/Session/session.cpp`, `Runtime/client_tick.cpp` and `cmake/Runtime.cmake`.
 - **Domination's tab comes with 1:** `Extension/Domination/domination_menu.cpp` is compiled with Custom Multiplayer's API only when `Extension/CustomModes/custom_modes.h` is in the tree (`cmake/Runtime.cmake` sets `DINGOSDK_CUSTOM_MODES`); without it, the tab's registration does nothing. So whichever of 1 and 2 lands second, the tab appears with no further patch (checked: 1 alone has no tab; 1 and 2 together have it).
@@ -47,7 +42,7 @@ Use `-3`: once one of the two is in `main`, the other's patch touches lines next
   - `Extension/Domination/ARCHITECTURE.md` is the map for maintainers and agents: the rules apart from the game, every touchpoint outside the folder, one tick, the invariants that keep players in agreement, and how to change things safely.
 - **Custom Multiplayer:** `-DDINGOSDK_BUILD_MULTIPLAYER_TESTS=ON`, then build the targets `dingosdk_multiplayer_tests` and `dingosdk_multiplayer_lobby_tests`, and run `ctest -R "multiplayer_protocol|multiplayer_lobbies|native_menu_browser"` (the last checks the pause menu's tab order).
   - That option also builds two music probe tools, which failed to link in our tree. They're unrelated to these changes.
-- **Whole suite on `main` (`364c619`):** with all three patches, all 52 of ReSkate's tests pass (on `v2.0.7`, all 46) (`multiplayer_mesh` included: Domination adds stubs for the session's two Domination calls to its test, as it does for the throwdown relay). The probe tools `dingosdk_app_audio_probe` and `dingosdk_external_player_probe` don't link on `main` itself.
+- **Whole suite on `main` (`99467f4`) and on `v2.1.0`:** with all three patches, 52 of ReSkate's 53 tests pass on each. The 53rd, `server_config`, is `Not Run` on both: its own test file, `Server/Test/server_config_tests.cpp` (untouched by these patches; from the tool-locks merge `2f50601`, in `v2.1.0`), doesn't compile with MSVC's warnings-as-errors (C4456: a second local named `written` at line 179 hides the one at line 53). Not ours to fix in these patches (`multiplayer_mesh` included: Domination adds stubs for the session's two Domination calls to its test, as it does for the throwdown relay). The probe tools `dingosdk_app_audio_probe` and `dingosdk_external_player_probe` don't link on `main` itself.
 - **In game, offline:** checked with 1 and 2 together, in a separate offline copy of the game. On the current code:
   - rounds on Skate3Improved (the red-bowl park) and on San Vansterdam;
   - `domination start` for a park on another map loads that map, then starts;
@@ -103,10 +98,11 @@ Use `-3`: once one of the two is in `main`, the other's patch touches lines next
   - refused host requests weren't explained;
   - smaller layout points.
 - **Play counts (1):** a round with practice bots and a solo round counted (`domination stats`: 1 with others, 2 in all, Skate 3 Improved 2, Red-bowl park 2), and the counts were still there after a restart.
-- **Server play stats (3):** unit tests (`server_stats`), and the server's other tests pass; built on `main` and `v2.0.7`, alone and with 1 and 2. A full build found two server tests that build the whole host without the new file; fixed.
+- **Server play stats (3):** unit tests (`server_stats`), and the server's other tests pass; built on `main` and `v2.1.0`, alone and with 1 and 2. A full build found two server tests that build the whole host without the new file; fixed, and again for `server_lock_tests`, new on `main` after `v2.1.0`.
 - **Park-making and packs (1):** in a test copy, `domination tp` then `domination scan` hit all 961 points; `render_scan.py` drew it; `build_park.py` rebuilt Sunken banks from its spec to the shipped file exactly; `make_builtin.py` regenerates `domination_parks.h` byte for byte from `parks/`; the San Vansterdam pack, unzipped into `Mods`, loaded and its (edited) park replaced the built-in one; a pack switched off in the launcher's mod list loads nothing.
-- **Rebased on `main` `364c619`** (two rebases since the first base; the last resolved two conflicts: test options added beside ours in `CMakeLists.txt`, and the Multiplayer page split into `hub_frame`, given its area): all three apply cleanly; a Hillside park round with 3 practice bots agreed on every copy, on Skate 3 Improved 1.1.3 (all 48 Skate 3 spots also checked on 1.1.3: the skater stands on each).
+- **Earlier rebase, on `main` `364c619`** (two rebases since the first base; the last resolved two conflicts: test options added beside ours in `CMakeLists.txt`, and the Multiplayer page split into `hub_frame`, given its area): all three apply cleanly; a Hillside park round with 3 practice bots agreed on every copy, on Skate 3 Improved 1.1.3 (all 48 Skate 3 spots also checked on 1.1.3: the skater stands on each).
 - **Live, two players:** played online between two PCs (two Steam accounts, ReSkate 2.1 built from these branches, a join-code lobby hosted from the DOMINATION tab): rounds ran for both players.
+- **Rebased on `main` `99467f4`, after the official `v2.1.0` release** (conflicts: `road_rash` gained a field on the line next to Custom Multiplayer's in `client_tick.cpp`; server tool locks landed beside the play stats' lines in `server_host.cpp` and `server_commands.cpp`; main's lines kept, ours added): all three apply cleanly on `main` and on `v2.1.0` (2 with `git am -3` there); the suite, `fuzz 1000` and the practice-bot rounds above were run after the rebase, on both bases.
 - **Not tested yet:**
   - server play stats on a live server with players;
   - the menu sounds on taking or losing a spot (the log can't show them; heard only in play);
@@ -276,16 +272,12 @@ In the worktree `D:\reskate-dev\ReSkate-upstream`:
 
 | Branch | Commit | What |
 |---|---|---|
-| `pr-domination` | 7ec10fa | Pull request 1 |
-| `pr-custom-multiplayer` | e7414f1 | Pull request 2 |
-| `pr-server-stats` | c0d63fb | Pull request 3 |
-| `integration` | 1426169 | 1 and 2 merged |
-| `test-build` | 2b54594 | `integration` plus a bot-only launcher change that keeps the test copy offline and isolated, plus Domination's developer tools (practice bots, test claims, park-making commands, the score HUD logger and its replay test). Never submit it. |
-| `pr207-domination`, `pr207-custom-multiplayer`, `pr207-server-stats`, `integration207` | ab65276, fa2fd32, 069211c, e3bb3b7 | The same three on `v2.0.7` (`patches/for-2.0.7/`) |
+| `pr-domination` | 3d81821 | Pull request 1 (fork branch `domination`, #279) |
+| `pr-custom-multiplayer` | 36e2c55 | Pull request 2 (fork branch `custom-multiplayer`, #278) |
+| `pr-server-stats` | 76183e4 | Pull request 3 |
+| `integration` | b8e17bd | 1 and 2 merged |
+| `v210-domination`, `v210-custom-multiplayer`, `v210-server-stats`, `v210-all-three` | 2723791, dea9f90, 58362ac, 55e5a85 | The same three on the `v2.1.0` release, and all three together there (the check that they work on the release; the pull requests stay on `main`) |
+| `test-build` | c31f30d | `integration` plus a bot-only launcher change that keeps the test copy offline and isolated, plus Domination's developer tools (practice bots, test claims, park-making commands, the score HUD logger and its replay test). Never submit it. |
 
 The developer tools also sit on their own on `domination-devtools`, a test-only branch. They are not part of these patches and are never submitted.
 
-
-## Startup crash on v2.1.0-pre (fixed on main, not from these patches)
-
-On our test PC (RTX 5090, three 2560x1440 monitors, Windows 11), launches of a `v2.1.0-pre` build crashed about ten seconds after start, 4 of 4 times for the player: `ReSkate.log` stopped right after the first `Render-resource pool: renderer built from Skate.exe+0x30a0a4b`, with a `CrashDump_*.mdmp` in the same millisecond. `3faa58b` ("the other renderer is allocated room for its metadata pointers") describes exactly this, and a build of `main` with it boots. `2.0.7` never crashed. Nothing here needs doing; it's noted so the result of our tests on `v2.1.0-pre` isn't a surprise.

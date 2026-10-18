@@ -4,18 +4,18 @@ Three independent changes, applied as patches. Each is one commit. Read this who
 
 | Order | Folder | Change | Needs |
 |---|---|---|---|
-| 1 | `patches/1-domination/` | **Domination**: the mode, from the console (`domination ...`) and, when 2 is in, its own tab; per-player play counts | nothing |
-| 2 | `patches/2-custom-multiplayer/` | **Custom Multiplayer**: modes as tabs on the Multiplayer page, hosting and finding games by mode, dropdown rows | nothing |
-| 3 | `patches/3-server-stats/` | **Server: play stats**: dedicated servers count games by mode and map (`data/stats.json`, `stats`) | nothing |
+| 1 | `1-domination/` | **Domination**: the mode, from the console (`domination ...`) and, when 2 is in, its own tab; per-player play counts | nothing |
+| 2 | `2-custom-multiplayer/` | **Custom Multiplayer**: modes as tabs on the Multiplayer page, hosting and finding games by mode, dropdown rows | nothing |
+| 3 | `3-server-stats/` | **Server: play stats**: dedicated servers count games by mode and map (`data/stats.json`, `stats`) | nothing |
 
-Any of them can be merged, in any order. Domination's tab needs no extra patch: `domination_menu.cpp` is built against Custom Multiplayer only when `Extension/CustomModes/custom_modes.h` exists (`cmake/Runtime.cmake` sets `DINGOSDK_CUSTOM_MODES`; a change to that file re-runs CMake). The patches in this folder are against `main` at `364c619`; `patches/for-2.0.7/` holds the same three against `v2.0.7`.
+Any of them can be merged, in any order. Domination's tab needs no extra patch: `domination_menu.cpp` is built against Custom Multiplayer only when `Extension/CustomModes/custom_modes.h` exists (`cmake/Runtime.cmake` sets `DINGOSDK_CUSTOM_MODES`; a change to that file re-runs CMake). The patches in this folder are against `main` at `99467f4` (2026-10-17, after the `v2.1.0` release, `ba1245a`). They apply to `v2.1.0` too: 1 and 3 as they are, 2 with `git am -3` (one line was added beside ours in `Runtime/client_tick.cpp` after the release; keep both).
 
 ## 1. Apply
 
 ```
-git checkout -b domination main && git am -3 patches/1-domination/*.patch
-git checkout -b custom-multiplayer main && git am -3 patches/2-custom-multiplayer/*.patch
-git checkout -b server-stats main && git am -3 patches/3-server-stats/*.patch
+git checkout -b domination main && git am -3 1-domination/*.patch
+git checkout -b custom-multiplayer main && git am -3 2-custom-multiplayer/*.patch
+git checkout -b server-stats main && git am -3 3-server-stats/*.patch
 ```
 
 Always pass `-3`. If `main` has moved and `git am` stops, the conflict is one of the kinds in section 3; resolve it, `git add`, `git am --continue`.
@@ -65,7 +65,7 @@ Play counts (change 1) use `profile_runtime::local_value` / `set_local_values` (
 | `Server/server_commands.cpp` | `stats`, and its help line |
 | `Server/server_engine.*`, `Server/GUI/server_gui.cpp` | `ServerStatusSnapshot::played`, and the overview's "Played Here" row |
 | `cmake/Apps.cmake` | `Server/server_stats.cpp` in both `dingosdk_server` targets |
-| `CMakeLists.txt` | the `server_stats` test (with the multiplayer tests), and `Server/server_stats.cpp` in the two server tests that build the whole host (`server_park_tests`, `server_load_tests`) |
+| `CMakeLists.txt` | the `server_stats` test (with the multiplayer tests), and `Server/server_stats.cpp` in the three server tests that build the whole host (`server_park_tests`, `server_lock_tests`, `server_load_tests`) |
 
 It reads Domination's message header (`0xD0`, version, type, park, round) itself, so it needs no Domination code.
 

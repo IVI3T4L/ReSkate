@@ -23,7 +23,7 @@ A dedicated server now counts the games played on it, by mode and map, and keeps
   - throwdowns: counted at their start, once; by series; a start without its offer; coop challenges;
   - Domination rounds: each player once; another park or round number is another round; older versions and short messages are not read; a round is forgotten after ten quiet minutes;
   - the file: saved, read back, and an unreadable one.
-- ReSkate's whole test suite passes with it (52 of 52 on `main`, 46 of 46 on `v2.0.7`). It builds alone and with #1 and #2.
+- ReSkate's whole test suite passes with it (52 of 53 on `main` and on `v2.1.0`; the one not run, `server_config`, is ReSkate's own test file not compiling under warnings-as-errors on both, unrelated to this change). It builds alone and with #1 and #2.
 - **Not yet tried:** a live server with players on it.
 
 ## For reviewers and agents

@@ -81,7 +81,7 @@ domination scan 330 440 345 455 0.5   # stand in the red-bowl park first
 ## For reviewers and agents
 
 - **Start here:** `Extension/Domination/ARCHITECTURE.md` says where the rules are, every touchpoint outside the folder, and the invariants that keep players in agreement.
-- **On 2.0.7 too:** the same change against `v2.0.7` is a patch on the notes branch (`patches/for-2.0.7/`), with a ready branch on the fork (`domination-2.0.7`); only small fits to the older base differ.
+- **Base:** built and tested against the official ReSkate 2.1.0 release (`v2.1.0`) and against `main` at `99467f4` (2026-10-17), the same way on both: the unit and network tests, `fuzz 1000`, and practice-bot rounds in game. The branch is on `main` and applies to `v2.1.0` as it is.
 - **Applying:** `AGENT-GUIDE.md` (submission folder) lists every line this adds to existing files, the conflicts that can happen, and how to check the result.
 - **With the menu:** this works alone, from the console. With "Custom Multiplayer" (#2) in the tree, it also gets its own tab (`domination_menu.cpp`, built only then: `cmake/Runtime.cmake` sets `DINGOSDK_CUSTOM_MODES` when `Extension/CustomModes/custom_modes.h` exists). Nothing else is needed, in either merge order.
 

@@ -1,4 +1,4 @@
-From c0d63fbf40d69441daf4fa8d8ee742980d120c60 Mon Sep 17 00:00:00 2001
+From 76183e477615c779c05c90c1e93138e51405b6f7 Mon Sep 17 00:00:00 2001
 From: IVI <breakthroughsecurity@gmail.com>
 Date: Fri, 16 Oct 2026 22:23:15 -0400
 Subject: [PATCH] Server: play stats (what has been played here, by mode and
@@ -27,7 +27,7 @@ the file).
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 ---
- CMakeLists.txt                     |   9 +-
+ CMakeLists.txt                     |  11 +-
  Server/GUI/server_gui.cpp          |   1 +
  Server/Test/server_stats_tests.cpp | 132 +++++++++++++++++++++++
  Server/server_commands.cpp         |   2 +
@@ -38,13 +38,13 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
  Server/server_stats.cpp            | 167 +++++++++++++++++++++++++++++
  Server/server_stats.h              |  65 +++++++++++
  cmake/Apps.cmake                   |   4 +-
- 11 files changed, 402 insertions(+), 4 deletions(-)
+ 11 files changed, 403 insertions(+), 5 deletions(-)
  create mode 100644 Server/Test/server_stats_tests.cpp
  create mode 100644 Server/server_stats.cpp
  create mode 100644 Server/server_stats.h
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 30164a3..a27361f 100644
+index f4cf838..e1c9df8 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -89,6 +89,11 @@ if(DINGOSDK_BUILD_MULTIPLAYER_TESTS)
@@ -68,7 +68,16 @@ index 30164a3..a27361f 100644
          Server/server_parks.cpp Extension/Throwdowns/throwdown_wire.cpp)
      target_include_directories(dingosdk_server_park_tests PRIVATE "${PROJECT_SOURCE_DIR}")
      target_include_directories(dingosdk_server_park_tests SYSTEM PRIVATE "${PROJECT_SOURCE_DIR}/External/steam_networking")
-@@ -292,7 +297,7 @@ if(DINGOSDK_BUILD_MULTIPLAYER_TESTS AND WIN32)
+@@ -133,7 +138,7 @@ if(DINGOSDK_BUILD_MULTIPLAYER_TESTS)
+         $<$<BOOL:${WIN32}>:Launcher/updater.cpp> Server/global_bans.cpp Server/server_words.cpp Extension/Multiplayer/developer_identity.cpp
+         Extension/Multiplayer/word_lists.cpp Extension/Multiplayer/Net/protocol.cpp Extension/Multiplayer/Net/delta_codec.cpp
+         Extension/Multiplayer/Net/wire_codec.cpp Extension/Multiplayer/Remote/playback_buffers.cpp
+-        Extension/Multiplayer/Session/password.cpp Server/server_activity.cpp Server/server_votes.cpp Server/server_commands.cpp
++        Extension/Multiplayer/Session/password.cpp Server/server_activity.cpp Server/server_stats.cpp Server/server_votes.cpp Server/server_commands.cpp
+         Server/server_parks.cpp Extension/Throwdowns/throwdown_wire.cpp)
+     target_include_directories(dingosdk_server_lock_tests PRIVATE "${PROJECT_SOURCE_DIR}")
+     target_include_directories(dingosdk_server_lock_tests SYSTEM PRIVATE "${PROJECT_SOURCE_DIR}/External/steam_networking")
+@@ -310,7 +315,7 @@ if(DINGOSDK_BUILD_MULTIPLAYER_TESTS AND WIN32)
          Extension/Multiplayer/Net/protocol.cpp
          Extension/Multiplayer/Net/delta_codec.cpp Extension/Multiplayer/Net/wire_codec.cpp
          Extension/Multiplayer/Remote/playback_buffers.cpp Extension/Multiplayer/Session/password.cpp
@@ -228,18 +237,18 @@ index 0000000..6989008
 +    return 0;
 +}
 diff --git a/Server/server_commands.cpp b/Server/server_commands.cpp
-index 7fcb42d..f77a283 100644
+index f94fa5e..abf56a6 100644
 --- a/Server/server_commands.cpp
 +++ b/Server/server_commands.cpp
-@@ -32,6 +32,7 @@ constexpr std::string_view help_text =
-     "park-mod config add <name> | <mod folder> | <map> [| <key>] | park-mod config remove <name>\n"
+@@ -33,6 +33,7 @@ constexpr std::string_view help_text =
      "activity-log on|off | announce-throwdowns on|off | parties [on|off] | party-size <2-8> | afk-kick <minutes>|off | speed-check off|warn|kick | board-check off|warn|kick\n"
      "score-check [off|warn|kick] | score-allow [<fingerprint>|remove <fingerprint>] | words [reload | global on|off]\n"
+     "lock <player|SteamID64> <noclip,nobail,boosts,tuning|all> | unlock <player|SteamID64> [<tools>|all] | locks | throwdown-locks [<tools>|off]\n"
 +    "stats (what has been played here: games by mode and map)\n"
      "reserved [slots <n> | add|remove <SteamID64>] | roles [reload] | role <player or SteamID64> <role>|none | update | quit";
  } // namespace
  
-@@ -73,6 +74,7 @@ std::string Host::command(std::string_view line, std::uint64_t admin) {
+@@ -74,6 +75,7 @@ std::string Host::command(std::string_view line, std::uint64_t admin) {
          return text;
      };
      if (name.empty() || name == "help") return std::string(help_text);
@@ -272,7 +281,7 @@ index 415e2d5..6e48314 100644
      unsigned max_players{};
      unsigned target_tps{dedicated_tps};
 diff --git a/Server/server_host.cpp b/Server/server_host.cpp
-index d6f02fc..d1ea336 100644
+index 445308c..5feaacc 100644
 --- a/Server/server_host.cpp
 +++ b/Server/server_host.cpp
 @@ -54,8 +54,10 @@ Host::Host(ServerConfig &config, SteamTransport &transport, Log log)
@@ -287,7 +296,7 @@ index d6f02fc..d1ea336 100644
  }
  
  Host::Guest *Host::find(std::uint64_t id) {
-@@ -272,8 +274,19 @@ bool Host::start(std::string &error) {
+@@ -274,8 +276,19 @@ bool Host::start(std::string &error) {
      roster_dirty_ = true;
      return true;
  }
@@ -307,25 +316,25 @@ index d6f02fc..d1ea336 100644
      const auto away = packet(PacketKind::away, now_us());
      for (auto &[id, guest] : guests_)
          if (guest->handshaken) send_packet(*guest, away, true, false);
-@@ -1301,6 +1314,7 @@ void Host::receive(std::uint64_t peer, std::span<const std::uint8_t> bytes, std:
-         link->last_packet = now_;
-         if (config_.activity_log || config_.announce_throwdowns)
+@@ -1353,6 +1366,7 @@ void Host::receive(std::uint64_t peer, std::span<const std::uint8_t> bytes, std:
              activity_.throwdown(peer, p.throwdown, link->latest_root ? &link->latest_root->position : nullptr, now_);
+             update_throwdown_locks();
+         }
 +        stats_.relayed(peer, p.throwdown, map_name(), now_);
          broadcast(p, true, false, p.source);
          return;
      }
-@@ -1897,6 +1911,8 @@ void Host::tick(std::uint64_t now) {
-     tick_parks();
+@@ -1950,6 +1964,8 @@ void Host::tick(std::uint64_t now) {
      sync_objects();
      activity_.tick(now_);
+     update_throwdown_locks();
 +    stats_.tick(now_);
 +    if (stats_.changed() && now_ >= next_stats_save_) save_stats();
      if (std::exchange(vote_recount_, false)) check_vote(false);
      if (vote_ && now_ >= vote_->ends) check_vote(true);
      // A finished vote has been shown long enough.
 diff --git a/Server/server_host.h b/Server/server_host.h
-index 367429e..261d546 100644
+index a62fb1a..74e7604 100644
 --- a/Server/server_host.h
 +++ b/Server/server_host.h
 @@ -1,5 +1,6 @@
@@ -599,10 +608,10 @@ index 0000000..98ea792
 +};
 +} // namespace dingosdk::server
 diff --git a/cmake/Apps.cmake b/cmake/Apps.cmake
-index 7b3e2d5..fc536bb 100644
+index 9967196..5a84b77 100644
 --- a/cmake/Apps.cmake
 +++ b/cmake/Apps.cmake
-@@ -212,6 +212,7 @@ if(WIN32)
+@@ -222,6 +222,7 @@ if(WIN32)
          Extension/Multiplayer/Net/delta_codec.cpp Extension/Multiplayer/Net/wire_codec.cpp
          Extension/Multiplayer/Remote/playback_buffers.cpp Extension/Multiplayer/Session/password.cpp
          Server/server_activity.cpp Server/server_votes.cpp Server/server_commands.cpp Server/server_parks.cpp Extension/Throwdowns/throwdown_wire.cpp
@@ -610,7 +619,7 @@ index 7b3e2d5..fc536bb 100644
          "${CMAKE_CURRENT_BINARY_DIR}/generated/launcher_resources.rc")
      target_include_directories(dingosdk_server SYSTEM PRIVATE "${PROJECT_SOURCE_DIR}/External/steam_networking")
      target_link_libraries(dingosdk_server PRIVATE dingosdk_launcher_support dingosdk_world_layer_scan dingosdk_json
-@@ -228,7 +229,8 @@ else()
+@@ -238,7 +239,8 @@ else()
          Extension/Multiplayer/Steam/steam_transport.cpp Extension/Multiplayer/Net/protocol.cpp
          Extension/Multiplayer/Net/delta_codec.cpp Extension/Multiplayer/Net/wire_codec.cpp
          Extension/Multiplayer/Remote/playback_buffers.cpp Extension/Multiplayer/Session/password.cpp

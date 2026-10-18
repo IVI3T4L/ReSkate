@@ -1,6 +1,6 @@
-From e7414f1be9350c4627e79bd407d716bf0210c42a Mon Sep 17 00:00:00 2001
+From 36e2c55ce81ebe21f25742cf8988f07a6c22a3b7 Mon Sep 17 00:00:00 2001
 From: IVI <breakthroughsecurity@gmail.com>
-Date: Fri, 16 Oct 2026 19:28:47 -0400
+Date: Sat, 17 Oct 2026 23:25:59 -0400
 Subject: [PATCH] Custom Multiplayer: ReSkate's own multiplayer modes as tabs
  on the Multiplayer page, hosting and finding games by mode
 
@@ -598,10 +598,10 @@ index 0000000..9cada64
 +}
 +} // namespace dingosdk::console
 diff --git a/Extension/Multiplayer/Session/session.cpp b/Extension/Multiplayer/Session/session.cpp
-index f08962a..032b1e8 100644
+index 8541736..bda60de 100644
 --- a/Extension/Multiplayer/Session/session.cpp
 +++ b/Extension/Multiplayer/Session/session.cpp
-@@ -727,6 +727,22 @@ void render(Session &s, std::uintptr_t client, const NativeFrame &local, std::ui
+@@ -728,6 +728,22 @@ void render(Session &s, std::uintptr_t client, const NativeFrame &local, std::ui
                                  s.nametag_dots);
  }
  } // namespace
@@ -640,10 +640,10 @@ index 21e00cd..ff9017e 100644
  MultiplayerChat chat();
  } // namespace dingosdk::multiplayer
 diff --git a/Extension/Multiplayer/Session/session_receive.cpp b/Extension/Multiplayer/Session/session_receive.cpp
-index 9653bf7..8bdc8bf 100644
+index 82c6cc2..230368e 100644
 --- a/Extension/Multiplayer/Session/session_receive.cpp
 +++ b/Extension/Multiplayer/Session/session_receive.cpp
-@@ -1239,9 +1239,11 @@ void networking(Session &s, const NativeFrame &local, std::uint64_t now) {
+@@ -1240,9 +1240,11 @@ void networking(Session &s, const NativeFrame &local, std::uint64_t now) {
              s.last_world_ready = now;
          }
      }
@@ -799,7 +799,7 @@ index 8c0dd7b..0799127 100644
      if (offline && missing.empty()) return;
      // Prepare both pages before exposing either. Their initial insertion is
 diff --git a/Extension/UI/Overlay/hub_page.cpp b/Extension/UI/Overlay/hub_page.cpp
-index 34af2c8..3f9e0cb 100644
+index fba81f2..2371c94 100644
 --- a/Extension/UI/Overlay/hub_page.cpp
 +++ b/Extension/UI/Overlay/hub_page.cpp
 @@ -109,6 +109,12 @@ struct Hub {
@@ -970,7 +970,7 @@ index 34af2c8..3f9e0cb 100644
  // The page's tabs. What a control does, and when it can, is the same as on ReSkate's own menu
  // (native_tools_view.h for travel, parks and the world; the same requests and commands that
  // menu sends for the rest); how it is laid out is here.
-@@ -1614,21 +1752,40 @@ void hub_frame(Hub &h, ImDrawList *draw, float u, ImVec2 a, ImVec2 z, float tabs
+@@ -1619,21 +1757,40 @@ void hub_frame(Hub &h, ImDrawList *draw, float u, ImVec2 a, ImVec2 z, float tabs
  
      // ---- the page's tabs
      const bool tools = !embedded && h.page.section == 1;
@@ -1017,7 +1017,7 @@ index 34af2c8..3f9e0cb 100644
          }
          if (previous_tab || next_tab) {
              std::size_t at = 0;
-@@ -1640,7 +1797,19 @@ void hub_frame(Hub &h, ImDrawList *draw, float u, ImVec2 a, ImVec2 z, float tabs
+@@ -1645,7 +1802,19 @@ void hub_frame(Hub &h, ImDrawList *draw, float u, ImVec2 a, ImVec2 z, float tabs
              h.sound = sound_tab;
              set_typing(h, 0);
          }
@@ -1038,7 +1038,7 @@ index 34af2c8..3f9e0cb 100644
          float x = a.x;
          const auto cap = [&](std::uint32_t pad_button, const char *key) {
              const auto name = ui.pad.available ? controller_combo_label(pad_button, ui.pad.style) : std::string(key);
-@@ -1648,19 +1817,22 @@ void hub_frame(Hub &h, ImDrawList *draw, float u, ImVec2 a, ImVec2 z, float tabs
+@@ -1653,19 +1822,22 @@ void hub_frame(Hub &h, ImDrawList *draw, float u, ImVec2 a, ImVec2 z, float tabs
          };
          cap(0x10000, "Z");
          for (const auto &[tab, name] : tabs) {
@@ -1065,7 +1065,7 @@ index 34af2c8..3f9e0cb 100644
      }
  
      // Under the connecting card the page is still drawn, to look at and not to use.
-@@ -1668,6 +1840,7 @@ void hub_frame(Hub &h, ImDrawList *draw, float u, ImVec2 a, ImVec2 z, float tabs
+@@ -1673,6 +1845,7 @@ void hub_frame(Hub &h, ImDrawList *draw, float u, ImVec2 a, ImVec2 z, float tabs
      const bool failed = !connecting && !h.failed.empty() && !in_session;
      if ((connecting || failed) && !tools) ui.input = ui.clicked = ui.doubled = false;
      if (tools) tools_page(ui, a, z);
@@ -1074,7 +1074,7 @@ index 34af2c8..3f9e0cb 100644
      case Tab::browser: browser_page(ui, a, z); break;
      case Tab::host: host_page(ui, a, z); break;
 diff --git a/Extension/UI/Overlay/overlay.h b/Extension/UI/Overlay/overlay.h
-index 2cbbb17..dc5967c 100644
+index 56cfe68..c2f719f 100644
 --- a/Extension/UI/Overlay/overlay.h
 +++ b/Extension/UI/Overlay/overlay.h
 @@ -19,6 +19,7 @@
@@ -1097,9 +1097,9 @@ index 2cbbb17..dc5967c 100644
 +};
 +
  // Road Rash's switches (Extension/RoadRash/road_rash.h): started, switched on, and whether its
- // worst wounds bleed.
+ // worst wounds bleed. `off`: its official mod is turned off in the launcher, and no menu lists it.
  struct RoadRashModel {
-@@ -279,6 +287,7 @@ struct Model {
+@@ -282,6 +290,7 @@ struct Model {
      ProgressionModel progression;
      PlayerCardModel player_card;
      HallOfMeatModel hall_of_meat;
@@ -1107,7 +1107,7 @@ index 2cbbb17..dc5967c 100644
      RoadRashModel road_rash;
      BoardBreakModel board_break;
      GrindExitModel grind_exit;
-@@ -392,7 +401,7 @@ void set_chat_feed(ChatFeed) noexcept;
+@@ -395,7 +404,7 @@ void set_chat_feed(ChatFeed) noexcept;
  // (thread-safe, cheap).
  struct HubPage {
      bool visible{};
@@ -1117,7 +1117,7 @@ index 2cbbb17..dc5967c 100644
  using HubPageFeed = HubPage (*)();
  void set_hub_page_feed(HubPageFeed) noexcept;
 diff --git a/Runtime/client_tick.cpp b/Runtime/client_tick.cpp
-index 241a2f2..c737e9c 100644
+index 7f74641..de975b4 100644
 --- a/Runtime/client_tick.cpp
 +++ b/Runtime/client_tick.cpp
 @@ -17,6 +17,7 @@
@@ -1128,7 +1128,7 @@ index 241a2f2..c737e9c 100644
  #include "Extension/BoardBreak/board_break.h"
  #include "Extension/BoardBreak/board_break_audio.h"
  #include "Extension/ReplayKeyframes/replay_keyframes.h"
-@@ -882,6 +883,7 @@ void update_model(std::uintptr_t client, TickState& frame) {
+@@ -1096,6 +1097,7 @@ void update_model(std::uintptr_t client, TickState& frame) {
      dingosdk::drone::outfit::on_client_tick();
      dingosdk::board_break::on_client_tick(client);
      dingosdk::grind_exit_control::on_client_tick(client);
@@ -1136,14 +1136,14 @@ index 241a2f2..c737e9c 100644
      if (!has_request && now < r.next_model && state == r.previous_state) return;
      r.next_model = now + 500;
      DINGO_PROFILE_ZONE("tick/update_model/world model (500 ms)");
-@@ -1020,6 +1022,7 @@ void update_model(std::uintptr_t client, TickState& frame) {
+@@ -1234,6 +1236,7 @@ void update_model(std::uintptr_t client, TickState& frame) {
      model.progression = dingosdk::local_profile_progression();
      model.player_card = dingosdk::local_profile_player_card();
      model.hall_of_meat = {dingosdk::hall_of_meat::available(), dingosdk::hall_of_meat::enabled()};
 +    model.custom_modes = {dingosdk::custom_modes::list(), dingosdk::custom_modes::host_state()};
-     model.road_rash = {dingosdk::road_rash::available(), dingosdk::road_rash::enabled(), dingosdk::road_rash::blood()};
+     model.road_rash = {dingosdk::road_rash::available(), dingosdk::road_rash::enabled(), dingosdk::road_rash::blood(),
+                        dingosdk::road_rash::turned_off()};
      const auto breakable_deck = dingosdk::board_break::deck();
-     model.board_break = {dingosdk::board_break::available(), dingosdk::board_break::enabled(), !breakable_deck.empty(),
 diff --git a/Server/main.cpp b/Server/main.cpp
 index 13e78ae..84f17e1 100644
 --- a/Server/main.cpp
@@ -1158,7 +1158,7 @@ index 13e78ae..84f17e1 100644
          std::this_thread::sleep_for(std::chrono::milliseconds(2));
      }
 diff --git a/Server/server_config.cpp b/Server/server_config.cpp
-index fe5c310..c3a2dcc 100644
+index 3c0ed3c..c95b274 100644
 --- a/Server/server_config.cpp
 +++ b/Server/server_config.cpp
 @@ -63,6 +63,7 @@ Layout layout(const ServerConfig &c) {
@@ -1169,7 +1169,7 @@ index fe5c310..c3a2dcc 100644
      server.set("password", c.password);
      server.set("welcome_message", c.welcome);
      server.set("chat_color", c.chat_color);
-@@ -301,6 +302,7 @@ ServerConfig load_config(const std::filesystem::path &file, std::vector<std::str
+@@ -305,6 +306,7 @@ ServerConfig load_config(const std::filesystem::path &file, std::vector<std::str
          return found ? found->template get<T>() : fallback;
      };
      c.name = get("server", "name", c.name);
@@ -1178,10 +1178,10 @@ index fe5c310..c3a2dcc 100644
      c.welcome = get("server", "welcome_message", c.welcome, {"welcome"});
      c.chat_color = get("server", "chat_color", c.chat_color);
 diff --git a/Server/server_config.h b/Server/server_config.h
-index 65c75bf..401883a 100644
+index 4de2698..860ab52 100644
 --- a/Server/server_config.h
 +++ b/Server/server_config.h
-@@ -90,6 +90,10 @@ inline constexpr unsigned dedicated_tps = 20;
+@@ -95,6 +95,10 @@ inline constexpr std::uint8_t lock_all = lock_movement | lock_tuning;
  struct ServerConfig {
      std::filesystem::path file;
      std::string name = "ReSkate server";
@@ -1238,10 +1238,10 @@ index 27220f0..c5dc732 100644
  std::string server_tags(const Advertisement &);
  
 diff --git a/cmake/Runtime.cmake b/cmake/Runtime.cmake
-index 6ffc39b..c29ad2e 100644
+index e6256e6..6b5368f 100644
 --- a/cmake/Runtime.cmake
 +++ b/cmake/Runtime.cmake
-@@ -166,6 +166,8 @@ add_library(dingosdk_runtime SHARED
+@@ -167,6 +167,8 @@ add_library(dingosdk_runtime SHARED
      Extension/HallOfMeat/hall_of_meat_slow_motion.cpp
      Extension/RoadRash/road_rash.cpp
      Extension/RoadRash/road_rash_commands.cpp

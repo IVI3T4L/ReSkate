@@ -1,6 +1,6 @@
-From 7ec10fadac3a9b00ad9228aa052f871ab50191fb Mon Sep 17 00:00:00 2001
+From 3d8182104e46649a822d6f0d912939262de11fd4 Mon Sep 17 00:00:00 2001
 From: IVI <breakthroughsecurity@gmail.com>
-Date: Sat, 17 Oct 2026 14:00:08 -0400
+Date: Sat, 17 Oct 2026 23:25:59 -0400
 Subject: [PATCH] Domination: a custom multiplayer mode
 
 skate. 3's Domination: own the most spots in a park. The best single trick
@@ -213,10 +213,10 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
  create mode 100644 Extension/Domination/tools/render_scan.py
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 30164a3..ac64741 100644
+index f4cf838..646dd1c 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -366,6 +366,22 @@ if(DINGOSDK_BUILD_REPLAY_KEYFRAMES_TESTS)
+@@ -389,6 +389,22 @@ if(DINGOSDK_BUILD_REPLAY_KEYFRAMES_TESTS)
      target_include_directories(dingosdk_replay_keyframes_tests PRIVATE "${PROJECT_SOURCE_DIR}")
      add_test(NAME replay_keyframes COMMAND dingosdk_replay_keyframes_tests)
  endif()
@@ -8206,7 +8206,7 @@ index 0000000..1353d08
 +if __name__ == "__main__":
 +    main()
 diff --git a/Extension/Multiplayer/Session/session.cpp b/Extension/Multiplayer/Session/session.cpp
-index f08962a..86b3926 100644
+index 8541736..7b4e9dd 100644
 --- a/Extension/Multiplayer/Session/session.cpp
 +++ b/Extension/Multiplayer/Session/session.cpp
 @@ -1,6 +1,8 @@
@@ -8218,7 +8218,7 @@ index f08962a..86b3926 100644
  #include "Engine/Core/Debug/trace.h"
  #include "Extension/Multiplayer/Hud/native_player_ui.h"
  #include "Extension/Multiplayer/Hud/native_indicators.h"
-@@ -410,9 +412,15 @@ void relay_throwdowns(Session &s, bool in_world) {
+@@ -411,9 +413,15 @@ void relay_throwdowns(Session &s, bool in_world) {
      }
      if (names)
          input.local_name = in_session ? s.transport.name(local) : std::string(steam_social_snapshot()->local.name);
@@ -8236,10 +8236,10 @@ index f08962a..86b3926 100644
  }
  // A player in the local coop celebration stands at their spot there: the whole pose moves,
 diff --git a/Extension/Multiplayer/Test/mesh_tests.cpp b/Extension/Multiplayer/Test/mesh_tests.cpp
-index 164e5e4..ba49ee3 100644
+index 46bd061..fbafd00 100644
 --- a/Extension/Multiplayer/Test/mesh_tests.cpp
 +++ b/Extension/Multiplayer/Test/mesh_tests.cpp
-@@ -75,6 +75,14 @@ void enforce(std::uintptr_t, std::uintptr_t, std::span<const std::uint8_t>) noex
+@@ -77,6 +77,14 @@ void enforce(std::uintptr_t, std::uintptr_t, std::span<const std::uint8_t>) noex
  void release(std::uintptr_t) noexcept {}
  std::string status() { return {}; }
  }
@@ -8255,10 +8255,10 @@ index 164e5e4..ba49ee3 100644
  void install_script_error_log(std::uintptr_t) noexcept {}
  void install_board_wear_hold(std::uintptr_t) noexcept {}
 diff --git a/Extension/Objects/local_placements_runtime.cpp b/Extension/Objects/local_placements_runtime.cpp
-index 9d727bc..00e9587 100644
+index fcc0c81..7fd2116 100644
 --- a/Extension/Objects/local_placements_runtime.cpp
 +++ b/Extension/Objects/local_placements_runtime.cpp
-@@ -592,9 +592,14 @@ void update_position_teleport() {
+@@ -631,9 +631,14 @@ void update_position_teleport() {
          !read(local_runtime().base + addr::local_placements::teleport_manager, manager) || !manager ||
          !read(manager, state) || state != 0) return;
      const auto at = *r.position_teleport;
@@ -8275,10 +8275,10 @@ index 9d727bc..00e9587 100644
      r.transition_ctor(transition.data());
      struct Destroy { decltype(r.transition_destroy) call; void* value; ~Destroy() { call(value); } } destroy{r.transition_destroy, transition.data()};
 diff --git a/Extension/Objects/local_placements_runtime.h b/Extension/Objects/local_placements_runtime.h
-index 5d57252..e280c38 100644
+index 511d3d4..197c8fa 100644
 --- a/Extension/Objects/local_placements_runtime.h
 +++ b/Extension/Objects/local_placements_runtime.h
-@@ -68,6 +68,9 @@ struct PlacementsRuntime {
+@@ -78,6 +78,9 @@ struct PlacementsRuntime {
      // A teleport of the local skater to a position (console tp, the host's tpall).
      std::optional<std::array<float, 3>> position_teleport;
      std::uint64_t position_teleport_at{};
@@ -8313,10 +8313,10 @@ index 64087b2..c70914a 100644
      return true;
  }
 diff --git a/Extension/Profile/local_profile_runtime.h b/Extension/Profile/local_profile_runtime.h
-index a787604..3a86f6f 100644
+index 8811020..01eaead 100644
 --- a/Extension/Profile/local_profile_runtime.h
 +++ b/Extension/Profile/local_profile_runtime.h
-@@ -83,6 +83,8 @@ bool teleport_to_local_placed_object(std::string_view map, std::uint64_t token);
+@@ -85,6 +85,8 @@ bool teleport_to_local_placed_object(std::string_view map, std::uint64_t token);
  // Teleports the local skater to a world position (sent within 5 s, when the skater can be
  // moved). False when the game's teleport is unavailable.
  bool teleport_local_skater(const std::array<float, 3>& position);
@@ -8363,7 +8363,7 @@ index a1b78f9..cf2a30a 100644
      draw_game_text();
      draw_drone_hud();
 diff --git a/Runtime/client_tick.cpp b/Runtime/client_tick.cpp
-index 241a2f2..67bf18c 100644
+index 7f74641..848c0ca 100644
 --- a/Runtime/client_tick.cpp
 +++ b/Runtime/client_tick.cpp
 @@ -16,6 +16,7 @@
@@ -8374,7 +8374,7 @@ index 241a2f2..67bf18c 100644
  #include "Extension/RoadRash/road_rash.h"
  #include "Extension/BoardBreak/board_break.h"
  #include "Extension/BoardBreak/board_break_audio.h"
-@@ -878,6 +879,7 @@ void update_model(std::uintptr_t client, TickState& frame) {
+@@ -1092,6 +1093,7 @@ void update_model(std::uintptr_t client, TickState& frame) {
          dingosdk::update_local_item_browser();
      }
      dingosdk::hall_of_meat::on_client_tick();
@@ -8382,7 +8382,7 @@ index 241a2f2..67bf18c 100644
      dingosdk::road_rash::on_client_tick(client);
      dingosdk::drone::outfit::on_client_tick();
      dingosdk::board_break::on_client_tick(client);
-@@ -890,6 +892,7 @@ void update_model(std::uintptr_t client, TickState& frame) {
+@@ -1104,6 +1106,7 @@ void update_model(std::uintptr_t client, TickState& frame) {
      const auto& current_level = description.lm_level.empty() ? description.level : description.lm_level;
      dingosdk::live_mods::set_current_level(current_level);
      dingosdk::hall_of_meat::set_level(current_level);
@@ -8391,10 +8391,10 @@ index 241a2f2..67bf18c 100644
      // A live mod apply hands over the destinations its mods declare. A map
      // being played that is no longer among them (its mod disabled or deleted)
 diff --git a/Runtime/runtime_init.cpp b/Runtime/runtime_init.cpp
-index a6066fc..3dd629b 100644
+index 9b2e836..73ce3a9 100644
 --- a/Runtime/runtime_init.cpp
 +++ b/Runtime/runtime_init.cpp
-@@ -29,6 +29,8 @@
+@@ -30,6 +30,8 @@
  #include "Extension/Assets/map_download.h"
  #include "Extension/Boot/offline_boot.h"
  #include "Extension/HallOfMeat/hall_of_meat.h"
@@ -8403,7 +8403,7 @@ index a6066fc..3dd629b 100644
  #include "Extension/RoadRash/road_rash.h"
  #include "Extension/BoardBreak/board_break.h"
  #include "Extension/Skater/grind_exit_control.h"
-@@ -440,6 +442,8 @@ extern "C" __declspec(dllexport) BOOL WINAPI DingoSDKDebugInitialize() {
+@@ -444,6 +446,8 @@ extern "C" __declspec(dllexport) BOOL WINAPI DingoSDKDebugInitialize() {
          const bool camera_hook = dingosdk::start_camera_observer(r.base);
          record("{\"event\":\"camera_observer_initialized\",\"active\":" + std::string(camera_hook ? "true" : "false") + "}");
          (void)dingosdk::start_no_bail(r.base);
@@ -8413,10 +8413,10 @@ index a6066fc..3dd629b 100644
          record("{\"event\":\"hall_of_meat_initialized\",\"active\":" + std::string(meat ? "true" : "false") + "}");
          const bool rash = dingosdk::road_rash::start(r.base);
 diff --git a/cmake/Runtime.cmake b/cmake/Runtime.cmake
-index 6ffc39b..0e97940 100644
+index e6256e6..8c7d311 100644
 --- a/cmake/Runtime.cmake
 +++ b/cmake/Runtime.cmake
-@@ -155,6 +155,15 @@ add_library(dingosdk_runtime SHARED
+@@ -156,6 +156,15 @@ add_library(dingosdk_runtime SHARED
      Extension/Skater/physics_tuning.cpp
      Extension/Multiplayer/Remote/remote_collision.cpp
      Extension/Skater/physics_tuning_model.cpp
@@ -8432,7 +8432,7 @@ index 6ffc39b..0e97940 100644
      Extension/HallOfMeat/hall_of_meat.cpp
      Extension/HallOfMeat/hall_of_meat_card.cpp
      Extension/HallOfMeat/hall_of_meat_commands.cpp
-@@ -290,6 +299,11 @@ endif()
+@@ -291,6 +300,11 @@ endif()
  dingosdk_version_info(dingosdk_runtime "ReSkate mod runtime" "ReSkate.dll" VFT_DLL)
  target_include_directories(dingosdk_runtime SYSTEM PRIVATE "${PROJECT_SOURCE_DIR}/External/steam_networking")
  target_link_libraries(dingosdk_runtime PRIVATE dingosdk_lz4 dingosdk_zstd)

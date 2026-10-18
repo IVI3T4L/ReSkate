@@ -36,7 +36,7 @@ No mode is in this change. Until one registers, the Multiplayer page looks as be
 ## For reviewers and agents
 
 - **Independent:** this works alone, and merges cleanly with "Domination" (#1) in either order.
-- **On 2.0.7 too:** the same change against `v2.0.7` is on the notes branch (`patches/for-2.0.7/`), with a ready branch on the fork (`custom-multiplayer-2.0.7`).
+- **Base:** built and tested against the official ReSkate 2.1.0 release (`v2.1.0`) and against `main` at `99467f4` (2026-10-17): the multiplayer tests, and rounds in game with Domination, on both. The branch is on `main`; on `v2.1.0` it applies with `git am -3` (one line was added beside ours in `Runtime/client_tick.cpp` after the release).
 - **Applying:** `AGENT-GUIDE.md` lists every line this adds to existing files.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
